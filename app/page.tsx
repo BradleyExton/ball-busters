@@ -553,7 +553,18 @@ function HomeContent() {
 
           {/* Player Attendance Section */}
           <div className="mt-6 border-t border-gray-200/50 pt-6">
-            <div className="flex items-center justify-between mb-4">
+            <div
+              className={`flex items-center justify-between mb-4 ${
+                isGameGenerated
+                  ? "cursor-pointer hover:bg-gray-50/60 rounded-lg p-2 -m-2 transition-all duration-200"
+                  : ""
+              }`}
+              onClick={
+                isGameGenerated
+                  ? () => setIsAttendanceCollapsed(!isAttendanceCollapsed)
+                  : undefined
+              }
+            >
               <div className="flex items-center space-x-3">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Player Attendance
@@ -563,12 +574,7 @@ function HomeContent() {
                 </span>
               </div>
               {isGameGenerated && (
-                <button
-                  onClick={() =>
-                    setIsAttendanceCollapsed(!isAttendanceCollapsed)
-                  }
-                  className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#D22237] hover:bg-red-50/60 rounded-lg transition-all duration-200 cursor-pointer"
-                >
+                <div className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-600">
                   <svg
                     className={`w-4 h-4 transition-transform duration-200 ${
                       isAttendanceCollapsed ? "rotate-0" : "rotate-180"
@@ -585,7 +591,7 @@ function HomeContent() {
                     />
                   </svg>
                   <span>{isAttendanceCollapsed ? "Show" : "Hide"}</span>
-                </button>
+                </div>
               )}
             </div>
 
