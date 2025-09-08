@@ -1,0 +1,20 @@
+{
+  "name": "Ball Busters - Softball Team Manager",
+  "short_name": "Ball Busters",
+  "description": "Manage your softball team lineup, player attendance, and position rotations with fair play algorithms.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#D22237",
+  "orientation": "portrait-primary",
+  "categories": ["sports", "productivity", "utilities"],
+  "lang": "en-US",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

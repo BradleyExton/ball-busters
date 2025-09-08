@@ -2,6 +2,17 @@
   "name": "ball-busters",
   "version": "0.1.0",
   "private": true,
+  "description": "Softball team management app for lineup generation, player attendance tracking, and position rotations with fair play algorithms.",
+  "keywords": [
+    "softball",
+    "team-management",
+    "sports",
+    "lineup",
+    "positions",
+    "nextjs",
+    "react"
+  ],
+  "author": "Bradley Exton",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
