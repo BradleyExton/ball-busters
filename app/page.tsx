@@ -520,6 +520,7 @@ function HomeContent() {
           attendingPlayers={attendingPlayers}
           battingOrder={battingOrder}
           isGenerated={isGameGenerated}
+          onBattingOrderChange={setBattingOrder}
         />
         <PositionsTable
           attendingPlayers={attendingPlayers}

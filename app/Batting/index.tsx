@@ -7,12 +7,14 @@ interface BattingOrderProps {
   attendingPlayers: string[];
   battingOrder: string[];
   isGenerated: boolean;
+  onBattingOrderChange: (newOrder: string[]) => void;
 }
 
 export default function BattingOrder({
   attendingPlayers,
   battingOrder,
   isGenerated,
+  onBattingOrderChange,
 }: BattingOrderProps) {
   // Filter players to only include those attending
   const availablePlayers = players.filter((player) =>
@@ -106,6 +108,45 @@ export default function BattingOrder({
     return false;
   };
 
+  // Drag and drop functionality
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newOrder = [...battingOrder];
+    const draggedPlayer = newOrder[draggedIndex];
+
+    // Remove the dragged player from its original position
+    newOrder.splice(draggedIndex, 1);
+
+    // Insert the dragged player at the new position
+    newOrder.splice(dropIndex, 0, draggedPlayer);
+
+    onBattingOrderChange(newOrder);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   if (availablePlayers.length === 0) {
     return (
       <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
@@ -122,7 +163,57 @@ export default function BattingOrder({
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">Batting Order</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Batting Order
+          </h2>
+          {isGenerated && battingOrder.length > 0 && (
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 print:hidden ${
+                isEditMode
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {isEditMode ? (
+                <>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Done
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  Edit
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {isGenerated && battingOrder.length > 0 ? (
@@ -137,13 +228,31 @@ export default function BattingOrder({
               return (
                 <div
                   key={`${playerName}-${index}`}
+                  draggable={isEditMode}
+                  onDragStart={
+                    isEditMode ? (e) => handleDragStart(e, index) : undefined
+                  }
+                  onDragOver={isEditMode ? handleDragOver : undefined}
+                  onDrop={isEditMode ? (e) => handleDrop(e, index) : undefined}
+                  onDragEnd={isEditMode ? handleDragEnd : undefined}
                   className={`flex items-center justify-between p-3 backdrop-blur-sm rounded-lg border shadow-md hover:bg-white/70 transition-all duration-200 ${
+                    isEditMode ? "cursor-move" : "cursor-default"
+                  } ${draggedIndex === index ? "opacity-50 scale-95" : ""} ${
                     hasAnyViolation
                       ? "bg-red-100/80 border-red-300 hover:bg-red-100/90"
                       : "bg-white/60 border-white/30"
                   }`}
                 >
                   <div className="flex items-center space-x-3">
+                    {isEditMode && (
+                      <svg
+                        className="w-4 h-4 text-gray-400 cursor-move"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    )}
                     <div
                       className={`flex items-center justify-center w-6 h-6 backdrop-blur-sm text-white rounded-full font-bold text-xs shadow-lg ${
                         hasAnyViolation ? "bg-red-500" : "bg-[#D22237]/90"
@@ -180,9 +289,11 @@ export default function BattingOrder({
             <table className="w-full">
               <thead>
                 <tr className="bg-[#D22237]">
-                  <th className={`py-2 text-center font-semibold text-white text-sm ${
-                    battingOrder.length > 11 ? "px-2" : "px-3"
-                  }`}>
+                  <th
+                    className={`py-2 text-center font-semibold text-white text-sm ${
+                      battingOrder.length > 11 ? "px-2" : "px-3"
+                    }`}
+                  >
                     Position
                   </th>
                   {battingOrder.map((_, index) => (
@@ -199,9 +310,11 @@ export default function BattingOrder({
               </thead>
               <tbody>
                 <tr className="bg-gray-50">
-                  <td className={`py-2 font-medium text-white bg-[#354d74] text-sm ${
-                    battingOrder.length > 11 ? "px-2" : "px-3"
-                  }`}>
+                  <td
+                    className={`py-2 font-medium text-white bg-[#354d74] text-sm ${
+                      battingOrder.length > 11 ? "px-2" : "px-3"
+                    }`}
+                  >
                     Player
                   </td>
                   {battingOrder.map((playerName, index) => {
@@ -215,8 +328,21 @@ export default function BattingOrder({
                     return (
                       <td
                         key={`${playerName}-${index}`}
+                        draggable={isEditMode}
+                        onDragStart={
+                          isEditMode
+                            ? (e) => handleDragStart(e, index)
+                            : undefined
+                        }
+                        onDragOver={isEditMode ? handleDragOver : undefined}
+                        onDrop={
+                          isEditMode ? (e) => handleDrop(e, index) : undefined
+                        }
+                        onDragEnd={isEditMode ? handleDragEnd : undefined}
                         className={`py-2 text-center text-xs font-medium ${
-                          battingOrder.length > 11 ? "px-1" : "px-2"
+                          isEditMode ? "cursor-move" : "cursor-default"
+                        } ${battingOrder.length > 11 ? "px-1" : "px-2"} ${
+                          draggedIndex === index ? "opacity-50 scale-95" : ""
                         } ${
                           hasAnyViolation
                             ? "bg-red-100 text-red-800"
@@ -224,6 +350,15 @@ export default function BattingOrder({
                         }`}
                       >
                         <div className="flex flex-col items-center">
+                          {isEditMode && (
+                            <svg
+                              className="w-3 h-3 text-gray-400 mb-1 cursor-move"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                            </svg>
+                          )}
                           <span className="font-medium text-xs leading-tight">
                             {playerName}
                           </span>
