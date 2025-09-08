@@ -84,13 +84,13 @@ export default function AttendanceForm({
             isExpanded ? "translate-y-0" : "-translate-y-4"
           }`}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {players.map((player) => (
               <label
                 key={player.name}
-                className="group flex items-center space-x-3 cursor-pointer p-4 rounded-lg border-2 border-white/30 hover:border-[#D22237]/60 transition-all duration-200 bg-white/40 backdrop-blur-sm hover:bg-red-50/60 shadow-md"
+                className="group flex items-center space-x-3 cursor-pointer p-3 sm:p-4 rounded-lg border-2 border-white/30 hover:border-[#D22237]/60 transition-all duration-200 bg-white/40 backdrop-blur-sm hover:bg-red-50/60 shadow-md min-w-0"
               >
-                <div className="relative">
+                <div className="relative flex-shrink-0">
                   <input
                     type="checkbox"
                     checked={attendingPlayers.includes(player.name)}
@@ -121,11 +121,11 @@ export default function AttendanceForm({
                     )}
                   </div>
                 </div>
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900 block">
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-gray-900 block truncate">
                     {player.name}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 truncate block">
                     {player.gender === "MALE" ? "Male" : "Female"}
                   </span>
                 </div>
