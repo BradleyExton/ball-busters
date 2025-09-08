@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import PositionsTable from "./PositionsTable";
 import AttendanceForm from "./AttendanceForm";
 import BattingOrder from "./Batting";
 import { players } from "./data/players";
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   // Initialize with all players attending by default
   const [attendingPlayers, setAttendingPlayers] = useState<string[]>(
     players.map((player) => player.name)
@@ -15,6 +19,39 @@ export default function Home() {
 
   const [isGameGenerated, setIsGameGenerated] = useState(false);
   const [battingOrder, setBattingOrder] = useState<string[]>([]);
+
+  // Load shared game state from URL parameters
+  useEffect(() => {
+    const sharedAttendance = searchParams.get("attendance");
+    const sharedBattingOrder = searchParams.get("batting");
+
+    if (sharedAttendance && sharedBattingOrder) {
+      try {
+        const decodedAttendance = JSON.parse(
+          decodeURIComponent(sharedAttendance)
+        );
+        const decodedBattingOrder = JSON.parse(
+          decodeURIComponent(sharedBattingOrder)
+        );
+
+        // Validate that the shared data contains valid player names
+        const validAttendance = decodedAttendance.filter((name: string) =>
+          players.some((player) => player.name === name)
+        );
+        const validBattingOrder = decodedBattingOrder.filter((name: string) =>
+          players.some((player) => player.name === name)
+        );
+
+        if (validAttendance.length > 0 && validBattingOrder.length > 0) {
+          setAttendingPlayers(validAttendance);
+          setBattingOrder(validBattingOrder);
+          setIsGameGenerated(true);
+        }
+      } catch (error) {
+        console.error("Error parsing shared game data:", error);
+      }
+    }
+  }, [searchParams]);
 
   const handleAttendanceChange = (playerName: string, isAttending: boolean) => {
     if (isAttending) {
@@ -25,6 +62,27 @@ export default function Home() {
     // Reset game when attendance changes
     setIsGameGenerated(false);
     setBattingOrder([]);
+  };
+
+  // Share functionality
+  const shareGame = async () => {
+    if (!isGameGenerated || battingOrder.length === 0) {
+      return;
+    }
+
+    const shareData = {
+      attendance: encodeURIComponent(JSON.stringify(attendingPlayers)),
+      batting: encodeURIComponent(JSON.stringify(battingOrder)),
+    };
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?attendance=${shareData.attendance}&batting=${shareData.batting}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch (error) {
+      // Silent fallback - do nothing if clipboard fails
+      console.error("Failed to copy to clipboard:", error);
+    }
   };
 
   const generateGame = () => {
@@ -376,6 +434,8 @@ export default function Home() {
   const resetGame = () => {
     setIsGameGenerated(false);
     setBattingOrder([]);
+    // Clear URL parameters
+    router.push(window.location.pathname);
   };
 
   return (
@@ -426,6 +486,25 @@ export default function Home() {
                     Regenerate
                   </button>
                   <button
+                    onClick={shareGame}
+                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                      />
+                    </svg>
+                    Share
+                  </button>
+                  <button
                     onClick={resetGame}
                     className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
@@ -463,5 +542,36 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-[#D22237] rounded-full flex items-center justify-center animate-spin">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </div>
+            <p className="text-gray-600">Loading Ball Busters...</p>
+          </div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
