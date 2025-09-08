@@ -305,17 +305,65 @@ export default function PositionsTable({
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">
         Team Positions
       </h1>
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
+
+      {/* Mobile View - Cards per inning */}
+      <div className="block lg:hidden space-y-6">
+        {innings.map((inning) => (
+          <div
+            key={inning.inningNumber}
+            className="border border-gray-200 rounded-lg p-4"
+          >
+            <h3 className="text-lg font-semibold text-[#D22237] mb-3">
+              Inning {inning.inningNumber}
+            </h3>
+            <div className="space-y-2">
+              {FIELD_POSITIONS.map((position) => (
+                <div
+                  key={`${inning.inningNumber}-${position}`}
+                  className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded"
+                >
+                  <span className="text-sm font-medium text-[#354d74]">
+                    {position}
+                  </span>
+                  <span className="text-sm text-gray-900">
+                    {inning.assignments[position] || "—"}
+                  </span>
+                </div>
+              ))}
+              {inning.assignments.bench.length > 0 && (
+                <div className="flex justify-between items-center py-2 px-3 bg-[#354d74]/10 rounded">
+                  <span className="text-sm font-medium text-[#354d74]">
+                    Bench
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {inning.assignments.bench.map((player, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-block bg-[#354d74] text-white px-2 py-1 rounded text-xs"
+                      >
+                        {player}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop View - Table */}
+      <div className="hidden lg:block overflow-x-auto rounded-lg border border-gray-200">
         <table className="w-full">
           <thead>
             <tr className="bg-[#D22237]">
-              <th className="px-4 py-3 text-left font-semibold text-white">
+              <th className="px-2 py-2 text-left font-semibold text-white text-sm">
                 Position
               </th>
               {innings.map((inning) => (
                 <th
                   key={inning.inningNumber}
-                  className="px-4 py-3 text-center font-semibold text-white min-w-[100px]"
+                  className="px-2 py-2 text-center font-semibold text-white min-w-[80px] text-sm"
                 >
                   Inning {inning.inningNumber}
                 </th>
@@ -328,13 +376,13 @@ export default function PositionsTable({
                 key={position}
                 className={index % 2 === 0 ? "bg-[#354d74]/10" : "bg-white"}
               >
-                <td className="px-4 py-3 font-medium text-white bg-[#354d74]">
+                <td className="px-2 py-2 font-medium text-white bg-[#354d74] text-sm">
                   {position}
                 </td>
                 {innings.map((inning) => (
                   <td
                     key={`${position}-${inning.inningNumber}`}
-                    className="px-4 py-3 text-center text-sm text-[#354d74] font-medium"
+                    className="px-2 py-2 text-center text-xs text-[#354d74] font-medium"
                   >
                     {inning.assignments[position] || (
                       <span className="text-gray-400 italic">—</span>
@@ -344,20 +392,20 @@ export default function PositionsTable({
               </tr>
             ))}
             <tr className="border-t-2 border-[#354d74] bg-[#354d74]/20">
-              <td className="px-4 py-3 font-semibold text-white bg-[#354d74]">
+              <td className="px-2 py-2 font-semibold text-white bg-[#354d74] text-sm">
                 Bench
               </td>
               {innings.map((inning) => (
                 <td
                   key={`bench-${inning.inningNumber}`}
-                  className="px-4 py-3 text-center text-sm"
+                  className="px-2 py-2 text-center text-xs"
                 >
                   {inning.assignments.bench.length > 0 ? (
                     <div className="flex flex-wrap gap-1 justify-center">
                       {inning.assignments.bench.map((player, idx) => (
                         <span
                           key={idx}
-                          className="inline-block bg-[#354d74] text-white px-2 py-1 rounded text-xs font-medium"
+                          className="inline-block bg-[#354d74] text-white px-1 py-0.5 rounded text-xs font-medium"
                         >
                           {player}
                         </span>

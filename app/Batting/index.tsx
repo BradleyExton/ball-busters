@@ -49,17 +49,42 @@ export default function BattingOrder({
 
       {isGenerated && battingOrder.length > 0 ? (
         <div>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+          {/* Mobile View - Cards */}
+          <div className="block md:hidden space-y-2">
+            {battingOrder.map((playerName, index) => (
+              <div
+                key={`${playerName}-${index}`}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center w-6 h-6 bg-[#D22237] text-white rounded-full font-bold text-xs">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {playerName}
+                    </span>
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({getPlayerGender(playerName)})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop View - Table */}
+          <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200">
             <table className="w-full">
               <thead>
                 <tr className="bg-[#D22237]">
-                  <th className="px-4 py-3 text-center font-semibold text-white">
+                  <th className="px-3 py-2 text-center font-semibold text-white text-sm">
                     Position
                   </th>
                   {battingOrder.map((_, index) => (
                     <th
                       key={index}
-                      className="px-4 py-3 text-center font-semibold text-white min-w-[120px]"
+                      className="px-2 py-2 text-center font-semibold text-white min-w-[80px] text-sm"
                     >
                       {index + 1}
                     </th>
@@ -68,16 +93,18 @@ export default function BattingOrder({
               </thead>
               <tbody>
                 <tr className="bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-white bg-[#354d74]">
+                  <td className="px-3 py-2 font-medium text-white bg-[#354d74] text-sm">
                     Player
                   </td>
                   {battingOrder.map((playerName, index) => (
                     <td
                       key={`${playerName}-${index}`}
-                      className="px-4 py-3 text-center text-sm text-[#354d74] font-medium"
+                      className="px-2 py-2 text-center text-xs text-[#354d74] font-medium"
                     >
                       <div className="flex flex-col items-center">
-                        <span className="font-medium">{playerName}</span>
+                        <span className="font-medium text-xs leading-tight">
+                          {playerName}
+                        </span>
                         <span className="text-xs text-gray-500 mt-1">
                           ({getPlayerGender(playerName)})
                         </span>
