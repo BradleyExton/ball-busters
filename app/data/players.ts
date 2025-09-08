@@ -29,7 +29,7 @@ export const players = [
       POSITIONS.FIRST_BASE,
       POSITIONS.SECOND_BASE,
       POSITIONS.THIRD_BASE,
-      POSITIONS.ROVER,
+      POSITIONS.RIGHT_FIELD,
     ],
     gender: GENDER.FEMALE,
     hittingDistance: 1,

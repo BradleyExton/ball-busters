@@ -49,6 +49,15 @@ export default function PositionsTable({
 
   // Helper function to check if a player can play a specific position
   const canPlayerPlayPosition = (player: any, position: string): boolean => {
+    // Defensive check for undefined player
+    if (!player || !player.playablePositions) {
+      console.error(
+        "canPlayerPlayPosition called with invalid player:",
+        player
+      );
+      return false;
+    }
+
     // Check if position is in playablePositions
     const canPlayFromPlayable = player.playablePositions.some(
       (pos: string) => POSITION_MAP[pos] === position
@@ -269,7 +278,10 @@ export default function PositionsTable({
             );
 
             // Check if assigned player can play current position and someone else can take their spot
-            if (canPlayerPlayPosition(assignedPlayer, position)) {
+            if (
+              assignedPlayer &&
+              canPlayerPlayPosition(assignedPlayer, position)
+            ) {
               const replacements = unassignedPlayers.filter((p) =>
                 canPlayerPlayPosition(p, assignedPosition)
               );
@@ -301,7 +313,7 @@ export default function PositionsTable({
               );
 
               // Check if player1 can play the empty position
-              if (canPlayerPlayPosition(player1, position)) {
+              if (player1 && canPlayerPlayPosition(player1, position)) {
                 // Look for another assigned player who can take player1's position
                 for (const assignedPosition2 of Object.keys(assignments)) {
                   if (
@@ -316,7 +328,10 @@ export default function PositionsTable({
                   );
 
                   // Check if player2 can take player1's position
-                  if (canPlayerPlayPosition(player2, assignedPosition1)) {
+                  if (
+                    player2 &&
+                    canPlayerPlayPosition(player2, assignedPosition1)
+                  ) {
                     // Perform the swap
                     assignments[assignedPosition1] = player2.name;
                     assignments[assignedPosition2] = ""; // Will be filled next
