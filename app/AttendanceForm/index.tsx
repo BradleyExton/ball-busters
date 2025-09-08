@@ -76,7 +76,7 @@ export default function AttendanceForm({
       {/* Collapsible Content */}
       <div
         className={`overflow-hidden transition-all duration-500 ease-in-out ${
-          isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+          isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <div
