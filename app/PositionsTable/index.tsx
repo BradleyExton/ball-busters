@@ -1,7 +1,7 @@
 "use client";
 
 import { players } from "../data/players";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 // BenchSection component for mobile view
 function BenchSection({
@@ -95,6 +95,17 @@ export default function PositionsTable({
   attendingPlayers,
   isGenerated,
 }: PositionsTableProps) {
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editableAssignments, setEditableAssignments] = useState<
+    InningAssignments[]
+  >([]);
+  const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
+  const [draggedFromPosition, setDraggedFromPosition] = useState<{
+    inning: number;
+    position: string;
+  } | null>(null);
+
   // Filter players to only include those attending
   const availablePlayers = players.filter((player) =>
     attendingPlayers.includes(player.name)
@@ -125,6 +136,143 @@ export default function PositionsTable({
 
     return canPlayFromPlayable || isPreferredPosition;
   };
+
+  // Function to generate balanced assignments across all innings
+  const generateAllInnings = () => {
+    const totalInnings = 7;
+    const fieldPositions = FIELD_POSITIONS.length; // 9 positions
+    const totalPlayers = availablePlayers.length;
+
+    const allInnings: InningAssignments[] = [];
+
+    // Simple round-robin approach with randomization: rotate players through playing positions
+    for (let inning = 0; inning < totalInnings; inning++) {
+      const assignments: InningAssignments = { bench: [] };
+
+      // Calculate starting index for this inning's rotation with some randomization
+      const baseStartIndex = (inning * 5) % totalPlayers;
+      const randomOffset = Math.floor(Math.random() * 3); // Add 0-2 random offset
+      const startIndex = (baseStartIndex + randomOffset) % totalPlayers;
+
+      // Select 9 players to play this inning with shuffled available players
+      const shuffledPlayers = [...availablePlayers].sort(
+        () => Math.random() - 0.5
+      );
+      const playingPlayers: any[] = [];
+      for (let i = 0; i < fieldPositions; i++) {
+        const playerIndex = (startIndex + i) % totalPlayers;
+        playingPlayers.push(shuffledPlayers[playerIndex]);
+      }
+
+      // Randomize position assignment order
+      const shuffledPositions = [...FIELD_POSITIONS].sort(
+        () => Math.random() - 0.5
+      );
+
+      // Assign players to positions using a more balanced approach
+      for (let i = 0; i < fieldPositions; i++) {
+        const position = shuffledPositions[i];
+        const availablePlayersForPosition = playingPlayers.filter((player) =>
+          canPlayerPlayPosition(player, position)
+        );
+
+        let assignedPlayer;
+        if (availablePlayersForPosition.length > 0) {
+          // Prefer players who can play this position
+          assignedPlayer = availablePlayersForPosition[0];
+        } else {
+          // Fallback to any available player
+          assignedPlayer = playingPlayers[0];
+        }
+
+        if (assignedPlayer) {
+          assignments[position] = assignedPlayer.name;
+          // Remove assigned player from available list
+          const playerIndex = playingPlayers.findIndex(
+            (p) => p.name === assignedPlayer.name
+          );
+          if (playerIndex > -1) {
+            playingPlayers.splice(playerIndex, 1);
+          }
+        }
+      }
+
+      // Add remaining players to bench
+      const playingPlayerNames = new Set(
+        FIELD_POSITIONS.map((pos) => assignments[pos])
+      );
+      const benchPlayers = availablePlayers.filter(
+        (player) => !playingPlayerNames.has(player.name)
+      );
+
+      assignments.bench = benchPlayers.map((player) => player.name);
+      allInnings.push(assignments);
+    }
+
+    return allInnings;
+  };
+
+  // Drag and drop handlers for edit mode
+  const handleDragStart = (
+    e: React.DragEvent,
+    player: string,
+    inning: number,
+    position: string
+  ) => {
+    setDraggedPlayer(player);
+    setDraggedFromPosition({ inning, position });
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (
+    e: React.DragEvent,
+    targetInning: number,
+    targetPosition: string
+  ) => {
+    e.preventDefault();
+
+    if (!draggedPlayer || !draggedFromPosition) return;
+
+    // Create new assignments array
+    const newAssignments = [...editableAssignments];
+
+    // Get current player at target position
+    const targetPlayer = newAssignments[targetInning][targetPosition];
+
+    // Swap players
+    newAssignments[draggedFromPosition.inning][draggedFromPosition.position] =
+      targetPlayer;
+    newAssignments[targetInning][targetPosition] = draggedPlayer;
+
+    setEditableAssignments(newAssignments);
+    setDraggedPlayer(null);
+    setDraggedFromPosition(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPlayer(null);
+    setDraggedFromPosition(null);
+  };
+
+  // Toggle edit mode
+  const toggleEditMode = () => {
+    if (!isEditMode) {
+      // Entering edit mode - initialize editable assignments
+      const generated = generateAllInnings();
+      setEditableAssignments([...generated]);
+    }
+    setIsEditMode(!isEditMode);
+  };
+
+  // Generate assignments for display
+  const allAssignments = isEditMode
+    ? editableAssignments
+    : generateAllInnings();
 
   // Don't render table if fewer than 9 players (minimum for field positions)
   if (availablePlayers.length < 9) {
@@ -218,236 +366,6 @@ export default function PositionsTable({
     );
   }
 
-  // Function to generate balanced assignments across all innings
-  const generateAllInnings = () => {
-    const totalInnings = 7;
-    const fieldPositions = FIELD_POSITIONS.length; // 9 positions
-    const totalPlayers = availablePlayers.length;
-
-    const allInnings: InningAssignments[] = [];
-
-    // Simple round-robin approach with randomization: rotate players through playing positions
-    for (let inning = 0; inning < totalInnings; inning++) {
-      const assignments: InningAssignments = { bench: [] };
-
-      // Calculate starting index for this inning's rotation with some randomization
-      const baseStartIndex = (inning * 5) % totalPlayers;
-      const randomOffset = Math.floor(Math.random() * 3); // Add 0-2 random offset
-      const startIndex = (baseStartIndex + randomOffset) % totalPlayers;
-
-      // Select 9 players to play this inning with shuffled available players
-      const shuffledPlayers = [...availablePlayers].sort(
-        () => Math.random() - 0.5
-      );
-      const playingPlayers: any[] = [];
-      for (let i = 0; i < fieldPositions; i++) {
-        const playerIndex = (startIndex + i) % totalPlayers;
-        playingPlayers.push(shuffledPlayers[playerIndex]);
-      }
-
-      // Randomize position assignment order
-      const shuffledPositions = [...FIELD_POSITIONS].sort(
-        () => Math.random() - 0.5
-      );
-
-      // Assign positions - try to give preferred positions first
-      const usedPlayers = new Set<string>();
-      const remainingPositions = [...shuffledPositions];
-
-      // First pass: preferred positions (with randomization)
-      const shuffledPlayingPlayers = [...playingPlayers].sort(
-        () => Math.random() - 0.5
-      );
-      shuffledPlayingPlayers.forEach((player) => {
-        if (usedPlayers.has(player.name)) return;
-
-        const preferredPos =
-          typeof player.preferredPosition === "string" &&
-          player.preferredPosition !== "none"
-            ? POSITION_MAP[player.preferredPosition] || player.preferredPosition
-            : null;
-
-        if (
-          preferredPos &&
-          remainingPositions.includes(preferredPos) &&
-          canPlayerPlayPosition(player, preferredPos)
-        ) {
-          assignments[preferredPos] = player.name;
-          usedPlayers.add(player.name);
-          remainingPositions.splice(
-            remainingPositions.indexOf(preferredPos),
-            1
-          );
-        }
-      });
-
-      // Second pass: fill remaining positions with constraint-aware assignment
-      const remainingPlayers = playingPlayers.filter(
-        (player) => !usedPlayers.has(player.name)
-      );
-
-      // Use a smarter assignment that tries multiple options before giving up
-      const unassignedPlayers = [...remainingPlayers];
-
-      // Sort positions by how many players can fill them (hardest first)
-      const sortedRemainingPositions = [...remainingPositions].sort((a, b) => {
-        const playersForA = unassignedPlayers.filter((p) =>
-          canPlayerPlayPosition(p, a)
-        ).length;
-        const playersForB = unassignedPlayers.filter((p) =>
-          canPlayerPlayPosition(p, b)
-        ).length;
-        return playersForA - playersForB;
-      });
-
-      sortedRemainingPositions.forEach((position) => {
-        // Find all unassigned players who can play this position
-        const eligiblePlayers = unassignedPlayers.filter((player) =>
-          canPlayerPlayPosition(player, position)
-        );
-
-        if (eligiblePlayers.length > 0) {
-          // Randomly select from eligible players
-          const assignedPlayer =
-            eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
-
-          assignments[position] = assignedPlayer.name;
-          usedPlayers.add(assignedPlayer.name);
-
-          // Remove assigned player from unassigned list
-          const playerIndex = unassignedPlayers.indexOf(assignedPlayer);
-          unassignedPlayers.splice(playerIndex, 1);
-        } else {
-          // If no eligible players, try to reassign from already assigned players
-          let positionFilled = false;
-
-          // First try: swap with unassigned players
-          for (const assignedPosition of Object.keys(assignments)) {
-            if (assignedPosition === "bench" || positionFilled) continue;
-
-            const assignedPlayerName = assignments[assignedPosition];
-            const assignedPlayer = playingPlayers.find(
-              (p) => p.name === assignedPlayerName
-            );
-
-            // Check if assigned player can play current position and someone else can take their spot
-            if (
-              assignedPlayer &&
-              canPlayerPlayPosition(assignedPlayer, position)
-            ) {
-              const replacements = unassignedPlayers.filter((p) =>
-                canPlayerPlayPosition(p, assignedPosition)
-              );
-
-              if (replacements.length > 0) {
-                // Swap them
-                const replacement =
-                  replacements[Math.floor(Math.random() * replacements.length)];
-                assignments[assignedPosition] = replacement.name;
-                assignments[position] = assignedPlayer.name;
-
-                // Update unassigned players list
-                const replacementIndex = unassignedPlayers.indexOf(replacement);
-                unassignedPlayers.splice(replacementIndex, 1);
-                positionFilled = true;
-                break;
-              }
-            }
-          }
-
-          // Second try: swap between assigned players if first try failed
-          if (!positionFilled) {
-            for (const assignedPosition1 of Object.keys(assignments)) {
-              if (assignedPosition1 === "bench" || positionFilled) continue;
-
-              const player1Name = assignments[assignedPosition1];
-              const player1 = playingPlayers.find(
-                (p) => p.name === player1Name
-              );
-
-              // Check if player1 can play the empty position
-              if (player1 && canPlayerPlayPosition(player1, position)) {
-                // Look for another assigned player who can take player1's position
-                for (const assignedPosition2 of Object.keys(assignments)) {
-                  if (
-                    assignedPosition2 === "bench" ||
-                    assignedPosition2 === assignedPosition1
-                  )
-                    continue;
-
-                  const player2Name = assignments[assignedPosition2];
-                  const player2 = playingPlayers.find(
-                    (p) => p.name === player2Name
-                  );
-
-                  // Check if player2 can take player1's position
-                  if (
-                    player2 &&
-                    canPlayerPlayPosition(player2, assignedPosition1)
-                  ) {
-                    // Perform the swap
-                    assignments[assignedPosition1] = player2.name;
-                    assignments[assignedPosition2] = ""; // Will be filled next
-                    assignments[position] = player1.name;
-                    positionFilled = true;
-
-                    // Now we need to fill assignedPosition2 with someone
-                    // Try unassigned players first
-                    const canFillPosition2 = unassignedPlayers.filter((p) =>
-                      canPlayerPlayPosition(p, assignedPosition2)
-                    );
-
-                    if (canFillPosition2.length > 0) {
-                      const filler =
-                        canFillPosition2[
-                          Math.floor(Math.random() * canFillPosition2.length)
-                        ];
-                      assignments[assignedPosition2] = filler.name;
-                      const fillerIndex = unassignedPlayers.indexOf(filler);
-                      unassignedPlayers.splice(fillerIndex, 1);
-                    } else {
-                      // Put player2 back and try next combination
-                      assignments[assignedPosition1] = player1.name;
-                      assignments[assignedPosition2] = player2.name;
-                      assignments[position] = "";
-                      positionFilled = false;
-                      continue;
-                    }
-                    break;
-                  }
-                }
-                if (positionFilled) break;
-              }
-            }
-          }
-
-          // Last resort: if we still can't fill the position, assign any unassigned player
-          // This violates position constraints but ensures all positions are filled
-          if (!positionFilled && unassignedPlayers.length > 0) {
-            const anyPlayer =
-              unassignedPlayers[
-                Math.floor(Math.random() * unassignedPlayers.length)
-              ];
-            assignments[position] = anyPlayer.name;
-            const playerIndex = unassignedPlayers.indexOf(anyPlayer);
-            unassignedPlayers.splice(playerIndex, 1);
-          }
-        }
-      });
-
-      // Remaining players go to bench - should be everyone NOT selected to play this inning
-      const playingPlayerNames = new Set(playingPlayers.map((p) => p.name));
-      const benchPlayers = availablePlayers.filter(
-        (player) => !playingPlayerNames.has(player.name)
-      );
-
-      assignments.bench = benchPlayers.map((player) => player.name);
-      allInnings.push(assignments);
-    }
-
-    return allInnings;
-  };
-
   // Generate all innings with balanced play time only if game is generated
   if (!isGenerated) {
     return (
@@ -486,7 +404,6 @@ export default function PositionsTable({
     );
   }
 
-  const allAssignments = generateAllInnings();
   const innings = allAssignments.map((assignments, index) => ({
     inningNumber: index + 1,
     assignments,
@@ -494,9 +411,80 @@ export default function PositionsTable({
 
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">
-        Team Positions
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Team Positions</h1>
+        <div className="flex gap-2">
+          {isEditMode ? (
+            <>
+              <button
+                onClick={() => {
+                  // Save changes
+                  setIsEditMode(false);
+                }}
+                className="px-4 py-2 bg-[#D22237] text-white rounded-lg hover:bg-[#B01E31] transition-colors duration-200 flex items-center gap-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  // Cancel changes
+                  setIsEditMode(false);
+                  setEditableAssignments([]);
+                }}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={toggleEditMode}
+              className="px-4 py-2 bg-[#D22237] text-white rounded-lg hover:bg-[#B01E31] transition-colors duration-200 flex items-center gap-2"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Edit
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Mobile View - Cards per inning */}
       <div className="block lg:hidden space-y-6">
@@ -513,11 +501,41 @@ export default function PositionsTable({
                 <div
                   key={`${inning.inningNumber}-${position}`}
                   className="flex justify-between items-center py-2 px-3 bg-white/40 backdrop-blur-sm rounded border border-white/20"
+                  onDragOver={isEditMode ? handleDragOver : undefined}
+                  onDrop={
+                    isEditMode
+                      ? (e) => handleDrop(e, inning.inningNumber - 1, position)
+                      : undefined
+                  }
                 >
                   <span className="text-sm font-medium text-[#354d74]">
                     {position}
                   </span>
-                  <span className="text-sm text-gray-900">
+                  <span
+                    className={`text-sm text-gray-900 ${
+                      isEditMode
+                        ? "cursor-move bg-blue-100 px-2 py-1 rounded"
+                        : ""
+                    }`}
+                    draggable={isEditMode}
+                    onDragStart={
+                      isEditMode
+                        ? (e) => {
+                            const playerName =
+                              typeof inning.assignments[position] === "string"
+                                ? inning.assignments[position]
+                                : inning.assignments[position]?.[0] || "";
+                            handleDragStart(
+                              e,
+                              playerName,
+                              inning.inningNumber - 1,
+                              position
+                            );
+                          }
+                        : undefined
+                    }
+                    onDragEnd={isEditMode ? handleDragEnd : undefined}
+                  >
                     {inning.assignments[position] || "—"}
                   </span>
                 </div>
@@ -563,11 +581,44 @@ export default function PositionsTable({
                 {innings.map((inning) => (
                   <td
                     key={`${position}-${inning.inningNumber}`}
-                    className="px-2 py-2 text-center text-xs text-[#354d74] font-medium"
+                    className={`px-2 py-2 text-center text-xs text-[#354d74] font-medium ${
+                      isEditMode ? "cursor-move" : ""
+                    }`}
+                    onDragOver={isEditMode ? handleDragOver : undefined}
+                    onDrop={
+                      isEditMode
+                        ? (e) =>
+                            handleDrop(e, inning.inningNumber - 1, position)
+                        : undefined
+                    }
                   >
-                    {inning.assignments[position] || (
-                      <span className="text-gray-400 italic">—</span>
-                    )}
+                    <span
+                      draggable={isEditMode}
+                      onDragStart={
+                        isEditMode
+                          ? (e) => {
+                              const playerName =
+                                typeof inning.assignments[position] === "string"
+                                  ? inning.assignments[position]
+                                  : inning.assignments[position]?.[0] || "";
+                              handleDragStart(
+                                e,
+                                playerName,
+                                inning.inningNumber - 1,
+                                position
+                              );
+                            }
+                          : undefined
+                      }
+                      onDragEnd={isEditMode ? handleDragEnd : undefined}
+                      className={
+                        isEditMode ? "bg-blue-100 px-2 py-1 rounded" : ""
+                      }
+                    >
+                      {inning.assignments[position] || (
+                        <span className="text-gray-400 italic">—</span>
+                      )}
+                    </span>
                   </td>
                 ))}
               </tr>
