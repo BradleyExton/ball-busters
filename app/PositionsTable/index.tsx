@@ -451,7 +451,7 @@ export default function PositionsTable({
   // Generate all innings with balanced play time only if game is generated
   if (!isGenerated) {
     return (
-      <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
+      <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
         <h1 className="text-2xl font-semibold text-gray-900 mb-6">
           Team Positions
         </h1>
@@ -493,7 +493,7 @@ export default function PositionsTable({
   }));
 
   return (
-    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
+    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">
         Team Positions
       </h1>

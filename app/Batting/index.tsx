@@ -108,7 +108,7 @@ export default function BattingOrder({
 
   if (availablePlayers.length === 0) {
     return (
-      <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
+      <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">
           Batting Order
         </h2>
@@ -120,7 +120,7 @@ export default function BattingOrder({
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
+    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">Batting Order</h2>
       </div>
@@ -128,7 +128,7 @@ export default function BattingOrder({
       {isGenerated && battingOrder.length > 0 ? (
         <div>
           {/* Mobile View - Cards */}
-          <div className="block md:hidden space-y-2">
+          <div className="block md:hidden print:hidden space-y-2">
             {battingOrder.map((playerName, index) => {
               const hasMaleViolation = hasConsecutiveMalesViolation(index);
               const hasFemaleViolation = hasConsecutiveFemalesViolation(index);
@@ -176,17 +176,21 @@ export default function BattingOrder({
           </div>
 
           {/* Desktop View - Table */}
-          <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200">
+          <div className="hidden md:block print:block overflow-x-auto rounded-lg border border-gray-200">
             <table className="w-full">
               <thead>
                 <tr className="bg-[#D22237]">
-                  <th className="px-3 py-2 text-center font-semibold text-white text-sm">
+                  <th className={`py-2 text-center font-semibold text-white text-sm ${
+                    battingOrder.length > 11 ? "px-2" : "px-3"
+                  }`}>
                     Position
                   </th>
                   {battingOrder.map((_, index) => (
                     <th
                       key={index}
-                      className="px-2 py-2 text-center font-semibold text-white min-w-[80px] text-sm"
+                      className={`py-2 text-center font-semibold text-white min-w-[80px] text-sm ${
+                        battingOrder.length > 11 ? "px-1" : "px-2"
+                      }`}
                     >
                       {index + 1}
                     </th>
@@ -195,7 +199,9 @@ export default function BattingOrder({
               </thead>
               <tbody>
                 <tr className="bg-gray-50">
-                  <td className="px-3 py-2 font-medium text-white bg-[#354d74] text-sm">
+                  <td className={`py-2 font-medium text-white bg-[#354d74] text-sm ${
+                    battingOrder.length > 11 ? "px-2" : "px-3"
+                  }`}>
                     Player
                   </td>
                   {battingOrder.map((playerName, index) => {
@@ -209,7 +215,9 @@ export default function BattingOrder({
                     return (
                       <td
                         key={`${playerName}-${index}`}
-                        className={`px-2 py-2 text-center text-xs font-medium ${
+                        className={`py-2 text-center text-xs font-medium ${
+                          battingOrder.length > 11 ? "px-1" : "px-2"
+                        } ${
                           hasAnyViolation
                             ? "bg-red-100 text-red-800"
                             : "text-[#354d74]"
@@ -237,7 +245,7 @@ export default function BattingOrder({
           </div>
 
           <div className="mt-6 space-y-3">
-            <div className="p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30 shadow-md">
+            <div className="p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30 shadow-md print:hidden">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-[#354d74] font-medium">
                   Total Batters: {battingOrder.length}
@@ -261,7 +269,7 @@ export default function BattingOrder({
               </div>
             </div>
 
-            <div className="p-3 bg-blue-50/80 backdrop-blur-sm rounded-lg border border-blue-200/50">
+            <div className="p-3 bg-blue-50/80 backdrop-blur-sm rounded-lg border border-blue-200/50 print:hidden">
               <div className="flex items-start space-x-2">
                 <div className="flex-shrink-0 mt-0.5">
                   <svg

@@ -379,8 +379,8 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-[#D22237] shadow-sm">
+    <div className="min-h-screen bg-gray-50 print:min-h-screen print:bg-white print:flex print:items-center print:justify-center">
+      <div className="bg-[#D22237] shadow-sm print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-white">
             Ball Busters
@@ -389,14 +389,16 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
-        <AttendanceForm
-          attendingPlayers={attendingPlayers}
-          onAttendanceChange={handleAttendanceChange}
-        />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8 print:py-2 print:space-y-4 print:w-full print:max-w-none print:px-8">
+        <div className="print:hidden">
+          <AttendanceForm
+            attendingPlayers={attendingPlayers}
+            onAttendanceChange={handleAttendanceChange}
+          />
+        </div>
 
         {/* Game Generation Section */}
-        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-4 sm:p-6">
+        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-4 sm:p-6 print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div className="text-center sm:text-left">
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
@@ -447,7 +449,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#D22237] mt-16">
+      <footer className="bg-[#D22237] mt-16 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
             <h3 className="text-xl font-bold text-white mb-2">Ball Busters</h3>
