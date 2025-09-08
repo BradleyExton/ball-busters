@@ -92,22 +92,22 @@ export default function Home() {
         />
 
         {/* Game Generation Section */}
-        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-900">
+        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="text-center sm:text-left">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
                 Game Setup
               </h2>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Generate batting order and field positions for the game
               </p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3 sm:space-y-0">
               {!isGameGenerated ? (
                 <button
                   onClick={generateGame}
                   disabled={attendingPlayers.length === 0}
-                  className="px-6 py-3 bg-[#D22237] text-white rounded-lg hover:bg-red-700 hover:scale-105 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto px-6 py-3 bg-[#D22237] text-white rounded-lg hover:bg-red-700 hover:scale-105 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                 >
                   Generate Game
                 </button>
@@ -115,13 +115,13 @@ export default function Home() {
                 <>
                   <button
                     onClick={generateGame}
-                    className="px-4 py-2 bg-[#354d74] text-white rounded-lg hover:bg-[#2a3d5f] hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                    className="w-full sm:w-auto px-4 py-2 bg-[#354d74] text-white rounded-lg hover:bg-[#2a3d5f] hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
                     Regenerate
                   </button>
                   <button
                     onClick={resetGame}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                    className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
                     Reset
                   </button>
