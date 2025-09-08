@@ -28,21 +28,32 @@ export default function Home() {
   };
 
   const generateGame = () => {
-    // Generate batting order
+    // Generate batting order with randomization
     const availablePlayers = players.filter((player) =>
       attendingPlayers.includes(player.name)
     );
 
-    const males = availablePlayers.filter((p) => p.gender === "MALE");
-    const females = availablePlayers.filter((p) => p.gender === "FEMALE");
+    // Shuffle players within gender groups for randomization
+    const males = availablePlayers
+      .filter((p) => p.gender === "MALE")
+      .sort(() => Math.random() - 0.5); // Randomize male order
+
+    const females = availablePlayers
+      .filter((p) => p.gender === "FEMALE")
+      .sort(() => Math.random() - 0.5); // Randomize female order
 
     const order: string[] = [];
     let maleIndex = 0;
     let femaleIndex = 0;
 
-    // Alternate between male and female players
+    // Randomly decide starting gender (male vs female first)
+    const startWithMale = Math.random() < 0.5;
+
+    // Alternate between male and female players with random starting point
     for (let i = 0; i < availablePlayers.length; i++) {
-      if (i % 2 === 0 && maleIndex < males.length) {
+      const shouldUseMale = startWithMale ? i % 2 === 0 : i % 2 === 1;
+
+      if (shouldUseMale && maleIndex < males.length) {
         order.push(males[maleIndex].name);
         maleIndex++;
       } else if (femaleIndex < females.length) {
@@ -128,6 +139,21 @@ export default function Home() {
           isGenerated={isGameGenerated}
         />
       </div>
+
+      {/* Footer */}
+      <footer className="bg-[#D22237] mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-white mb-2">Ball Busters</h3>
+            <p className="text-red-100 text-sm">
+              Fair play • Smart lineups • Team management
+            </p>
+            <p className="text-red-200 text-xs mt-3">
+              © 2025 Ball Busters Team
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

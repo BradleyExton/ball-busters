@@ -168,27 +168,39 @@ export default function PositionsTable({
 
     const allInnings: InningAssignments[] = [];
 
-    // Simple round-robin approach: rotate players through playing positions
+    // Simple round-robin approach with randomization: rotate players through playing positions
     for (let inning = 0; inning < totalInnings; inning++) {
       const assignments: InningAssignments = { bench: [] };
 
-      // Calculate starting index for this inning's rotation
-      // This ensures different players get to play each inning
-      const startIndex = (inning * 5) % totalPlayers; // Rotate by 5 each inning
+      // Calculate starting index for this inning's rotation with some randomization
+      const baseStartIndex = (inning * 5) % totalPlayers;
+      const randomOffset = Math.floor(Math.random() * 3); // Add 0-2 random offset
+      const startIndex = (baseStartIndex + randomOffset) % totalPlayers;
 
-      // Select 9 players to play this inning
+      // Select 9 players to play this inning with shuffled available players
+      const shuffledPlayers = [...availablePlayers].sort(
+        () => Math.random() - 0.5
+      );
       const playingPlayers: any[] = [];
       for (let i = 0; i < fieldPositions; i++) {
         const playerIndex = (startIndex + i) % totalPlayers;
-        playingPlayers.push(availablePlayers[playerIndex]);
+        playingPlayers.push(shuffledPlayers[playerIndex]);
       }
+
+      // Randomize position assignment order
+      const shuffledPositions = [...FIELD_POSITIONS].sort(
+        () => Math.random() - 0.5
+      );
 
       // Assign positions - try to give preferred positions first
       const usedPlayers = new Set<string>();
-      const remainingPositions = [...FIELD_POSITIONS];
+      const remainingPositions = [...shuffledPositions];
 
-      // First pass: preferred positions
-      playingPlayers.forEach((player) => {
+      // First pass: preferred positions (with randomization)
+      const shuffledPlayingPlayers = [...playingPlayers].sort(
+        () => Math.random() - 0.5
+      );
+      shuffledPlayingPlayers.forEach((player) => {
         if (usedPlayers.has(player.name)) return;
 
         const preferredPos =
@@ -211,32 +223,43 @@ export default function PositionsTable({
         }
       });
 
-      // Second pass: fill remaining positions
+      // Second pass: fill remaining positions with randomization
       const remainingPlayers = playingPlayers.filter(
         (player) => !usedPlayers.has(player.name)
       );
 
+      // Shuffle remaining players for random position assignment
+      const shuffledRemainingPlayers = [...remainingPlayers].sort(
+        () => Math.random() - 0.5
+      );
+
       remainingPositions.forEach((position, index) => {
-        if (index < remainingPlayers.length) {
-          const player = remainingPlayers[index];
+        if (index < shuffledRemainingPlayers.length) {
+          // Create a pool of players who can play this position
+          const eligiblePlayers = shuffledRemainingPlayers
+            .slice(index)
+            .filter((player) => canPlayerPlayPosition(player, position));
 
-          // Try to find a player who can play this position
-          let assignedPlayer = null;
-          for (let i = index; i < remainingPlayers.length; i++) {
-            if (canPlayerPlayPosition(remainingPlayers[i], position)) {
-              assignedPlayer = remainingPlayers[i];
-              // Swap players to maintain order
-              [remainingPlayers[index], remainingPlayers[i]] = [
-                remainingPlayers[i],
-                remainingPlayers[index],
+          let assignedPlayer;
+          if (eligiblePlayers.length > 0) {
+            // Randomly select from eligible players
+            assignedPlayer =
+              eligiblePlayers[
+                Math.floor(Math.random() * eligiblePlayers.length)
               ];
-              break;
-            }
-          }
-
-          // If no eligible player found, assign the first available player anyway
-          if (!assignedPlayer) {
-            assignedPlayer = player;
+            // Move assigned player to current index
+            const assignedIndex =
+              shuffledRemainingPlayers.indexOf(assignedPlayer);
+            [
+              shuffledRemainingPlayers[index],
+              shuffledRemainingPlayers[assignedIndex],
+            ] = [
+              shuffledRemainingPlayers[assignedIndex],
+              shuffledRemainingPlayers[index],
+            ];
+          } else {
+            // If no eligible players, assign randomly from remaining
+            assignedPlayer = shuffledRemainingPlayers[index];
           }
 
           assignments[position] = assignedPlayer.name;

@@ -74,16 +74,16 @@ export default function AttendanceForm({
       </div>
 
       {/* Collapsible Content */}
-      <div 
+      <div
         className={`overflow-hidden transition-all duration-500 ease-in-out ${
-          isExpanded 
-            ? 'max-h-screen opacity-100' 
-            : 'max-h-0 opacity-0'
+          isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className={`px-6 pb-6 transform transition-transform duration-500 ease-in-out ${
-          isExpanded ? 'translate-y-0' : '-translate-y-4'
-        }`}>
+        <div
+          className={`px-6 pb-6 transform transition-transform duration-500 ease-in-out ${
+            isExpanded ? "translate-y-0" : "-translate-y-4"
+          }`}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {players.map((player) => (
               <label
