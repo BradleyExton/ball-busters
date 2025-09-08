@@ -254,6 +254,13 @@ export default function PositionsTable({
     }
   }, [initialAssignments, savedAssignments.length]);
 
+  // Reset saved assignments when attending players change
+  useEffect(() => {
+    setSavedAssignments([]);
+    setEditableAssignments([]);
+    setIsEditMode(false);
+  }, [attendingPlayers]);
+
   // Drag and drop handlers for edit mode
   const handleDragStart = (
     e: React.DragEvent,
@@ -374,8 +381,8 @@ export default function PositionsTable({
   const allAssignments = isEditMode
     ? editableAssignments
     : savedAssignments.length > 0
-    ? savedAssignments
-    : initialAssignments;
+      ? savedAssignments
+      : initialAssignments;
 
   // Don't render table if fewer than 9 players (minimum for field positions)
   if (availablePlayers.length < 9) {
