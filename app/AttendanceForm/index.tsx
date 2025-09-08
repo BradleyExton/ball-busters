@@ -12,13 +12,13 @@ export default function AttendanceForm({
   attendingPlayers,
   onAttendanceChange,
 }: AttendanceFormProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 mb-8">
       {/* Collapsible Header */}
       <div
-        className="p-6 cursor-pointer hover:bg-white/20 transition-colors duration-200"
+        className="p-4 sm:p-6 cursor-pointer hover:bg-white/20 transition-colors duration-200"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
@@ -76,13 +76,16 @@ export default function AttendanceForm({
       {/* Collapsible Content */}
       <div
         className={`overflow-hidden transition-all duration-500 ease-in-out ${
-          isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+          isExpanded
+            ? "max-h-96 sm:max-h-screen opacity-100"
+            : "max-h-0 opacity-0"
         }`}
       >
         <div
-          className={`px-6 pb-6 transform transition-transform duration-500 ease-in-out ${
+          className={`px-4 sm:px-6 pb-4 sm:pb-6 transform transition-transform duration-500 ease-in-out overflow-y-auto ${
             isExpanded ? "translate-y-0" : "-translate-y-4"
           }`}
+          style={{ maxHeight: isExpanded ? "24rem" : "0" }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {players.map((player) => (
