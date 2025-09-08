@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { players } from "../data/players";
 
 interface BattingOrderProps {
@@ -111,6 +111,27 @@ export default function BattingOrder({
   // Drag and drop functionality
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isRulesCollapsed, setIsRulesCollapsed] = useState(true);
+
+  // Ref for rules container to detect outside clicks
+  const rulesRef = useRef<HTMLDivElement>(null);
+
+  // Handle outside click to collapse rules
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        rulesRef.current &&
+        !rulesRef.current.contains(event.target as Node)
+      ) {
+        setIsRulesCollapsed(true);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
@@ -170,11 +191,7 @@ export default function BattingOrder({
           {isGenerated && battingOrder.length > 0 && (
             <button
               onClick={() => setIsEditMode(!isEditMode)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 print:hidden ${
-                isEditMode
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 print:hidden shadow-md hover:shadow-lg hover:scale-105 active:scale-95 bg-[#D22237] text-white hover:bg-red-700"
             >
               {isEditMode ? (
                 <>
@@ -404,44 +421,82 @@ export default function BattingOrder({
               </div>
             </div>
 
-            <div className="p-3 bg-blue-50/80 backdrop-blur-sm rounded-lg border border-blue-200/50 print:hidden">
-              <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0 mt-0.5">
+            <div
+              ref={rulesRef}
+              className="p-3 bg-blue-50/80 backdrop-blur-sm rounded-lg border border-blue-200/50 print:hidden cursor-pointer"
+              onClick={() => setIsRulesCollapsed(!isRulesCollapsed)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-2 flex-1">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg
+                      className="w-4 h-4 text-blue-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-blue-800 mb-1">
+                      Batting Order Rules
+                    </h4>
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        isRulesCollapsed
+                          ? "max-h-0 opacity-0"
+                          : "max-h-32 opacity-100"
+                      }`}
+                    >
+                      <ul className="text-xs text-blue-700 space-y-1">
+                        <li>
+                          • <strong>Priority Rule:</strong> No back-to-back
+                          females (overrides pattern)
+                        </li>
+                        <li>
+                          • <strong>Preferred Pattern:</strong>{" "}
+                          M-M-F-M-M-F-M-M-F when possible
+                        </li>
+                        <li>
+                          • <strong>Male Rule:</strong> Maximum 2 males can bat
+                          consecutively
+                        </li>
+                        <li>
+                          • <strong>Wraparound:</strong> All rules apply when
+                          order cycles back to beginning
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsRulesCollapsed(!isRulesCollapsed);
+                  }}
+                  className="flex-shrink-0 ml-2 p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors duration-200"
+                  title={isRulesCollapsed ? "Show rules" : "Hide rules"}
+                >
                   <svg
-                    className="w-4 h-4 text-blue-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isRulesCollapsed ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
                     <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 15l7-7 7 7"
                     />
                   </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-blue-800 mb-1">
-                    Batting Order Rules
-                  </h4>
-                  <ul className="text-xs text-blue-700 space-y-1">
-                    <li>
-                      • <strong>Priority Rule:</strong> No back-to-back females
-                      (overrides pattern)
-                    </li>
-                    <li>
-                      • <strong>Preferred Pattern:</strong> M-M-F-M-M-F-M-M-F
-                      when possible
-                    </li>
-                    <li>
-                      • <strong>Male Rule:</strong> Maximum 2 males can bat
-                      consecutively
-                    </li>
-                    <li>
-                      • <strong>Wraparound:</strong> All rules apply when order
-                      cycles back to beginning
-                    </li>
-                  </ul>
-                </div>
+                </button>
               </div>
             </div>
           </div>
