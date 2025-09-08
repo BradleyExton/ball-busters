@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import PositionsTable from "./PositionsTable";
-import AttendanceForm from "./AttendanceForm";
 import BattingOrder from "./Batting";
 import { players } from "./data/players";
 
@@ -19,6 +18,7 @@ function HomeContent() {
 
   const [isGameGenerated, setIsGameGenerated] = useState(false);
   const [battingOrder, setBattingOrder] = useState<string[]>([]);
+  const [isAttendanceCollapsed, setIsAttendanceCollapsed] = useState(false);
 
   // Load shared game state from URL parameters
   useEffect(() => {
@@ -46,6 +46,7 @@ function HomeContent() {
           setAttendingPlayers(validAttendance);
           setBattingOrder(validBattingOrder);
           setIsGameGenerated(true);
+          setIsAttendanceCollapsed(true);
         }
       } catch (error) {
         console.error("Error parsing shared game data:", error);
@@ -62,6 +63,7 @@ function HomeContent() {
     // Reset game when attendance changes
     setIsGameGenerated(false);
     setBattingOrder([]);
+    setIsAttendanceCollapsed(false);
   };
 
   // Share functionality
@@ -429,11 +431,13 @@ function HomeContent() {
 
     setBattingOrder(bestOrder);
     setIsGameGenerated(true);
+    setIsAttendanceCollapsed(true);
   };
 
   const resetGame = () => {
     setIsGameGenerated(false);
     setBattingOrder([]);
+    setIsAttendanceCollapsed(false);
     // Clear URL parameters
     router.push(window.location.pathname);
   };
@@ -450,13 +454,6 @@ function HomeContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8 print:py-2 print:space-y-4 print:w-full print:max-w-none print:px-8">
-        <div className="print:hidden">
-          <AttendanceForm
-            attendingPlayers={attendingPlayers}
-            onAttendanceChange={handleAttendanceChange}
-          />
-        </div>
-
         {/* Game Generation Section */}
         <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-4 sm:p-6 print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -551,6 +548,103 @@ function HomeContent() {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+
+          {/* Player Attendance Section */}
+          <div className="mt-6 border-t border-gray-200/50 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Player Attendance
+                </h3>
+                <span className="text-sm font-bold text-[#D22237] bg-red-50/80 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
+                  {attendingPlayers.length} / {players.length}
+                </span>
+              </div>
+              {isGameGenerated && (
+                <button
+                  onClick={() =>
+                    setIsAttendanceCollapsed(!isAttendanceCollapsed)
+                  }
+                  className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#D22237] hover:bg-red-50/60 rounded-lg transition-all duration-200 cursor-pointer"
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isAttendanceCollapsed ? "rotate-0" : "rotate-180"
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                  <span>{isAttendanceCollapsed ? "Show" : "Hide"}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Player Grid - Collapsible */}
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                isAttendanceCollapsed
+                  ? "max-h-0 opacity-0"
+                  : "max-h-[2000px] opacity-100"
+              }`}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {players.map((player) => (
+                  <label
+                    key={player.name}
+                    className="group flex items-center space-x-2 cursor-pointer p-3 rounded-lg border-2 border-white/30 hover:border-[#D22237]/60 transition-all duration-200 bg-white/40 backdrop-blur-sm hover:bg-red-50/60 shadow-md min-w-0"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={attendingPlayers.includes(player.name)}
+                        onChange={(e) =>
+                          handleAttendanceChange(player.name, e.target.checked)
+                        }
+                        className="sr-only"
+                      />
+                      <div
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                          attendingPlayers.includes(player.name)
+                            ? "bg-[#D22237] border-[#D22237]"
+                            : "bg-white border-gray-300 group-hover:border-[#D22237]"
+                        }`}
+                      >
+                        {attendingPlayers.includes(player.name) && (
+                          <svg
+                            className="w-2.5 h-2.5 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-gray-900 block truncate">
+                        {player.name}
+                      </span>
+                      <span className="text-xs text-gray-500 truncate block">
+                        {player.gender === "MALE" ? "Male" : "Female"}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         </div>

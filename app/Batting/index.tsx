@@ -191,7 +191,7 @@ export default function BattingOrder({
           {isGenerated && battingOrder.length > 0 && (
             <button
               onClick={() => setIsEditMode(!isEditMode)}
-              className="px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 print:hidden shadow-md hover:shadow-lg hover:scale-105 active:scale-95 bg-[#D22237] text-white hover:bg-red-700"
+              className="px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 print:hidden shadow-md hover:shadow-lg hover:scale-105 active:scale-95 bg-[#D22237] text-white hover:bg-red-700 cursor-pointer"
             >
               {isEditMode ? (
                 <>
@@ -308,7 +308,7 @@ export default function BattingOrder({
                 <tr className="bg-[#D22237]">
                   <th
                     className={`py-2 text-center font-semibold text-white text-sm ${
-                      battingOrder.length > 11 ? "px-2" : "px-3"
+                      battingOrder.length > 9 ? "px-1" : "px-2"
                     }`}
                   >
                     Position
@@ -316,8 +316,8 @@ export default function BattingOrder({
                   {battingOrder.map((_, index) => (
                     <th
                       key={index}
-                      className={`py-2 text-center font-semibold text-white min-w-[80px] text-sm ${
-                        battingOrder.length > 11 ? "px-1" : "px-2"
+                      className={`py-2 text-center font-semibold text-white min-w-[60px] text-sm ${
+                        battingOrder.length > 9 ? "px-0.5" : "px-1"
                       }`}
                     >
                       {index + 1}
@@ -329,7 +329,7 @@ export default function BattingOrder({
                 <tr className="bg-gray-50">
                   <td
                     className={`py-2 font-medium text-white bg-[#354d74] text-sm ${
-                      battingOrder.length > 11 ? "px-2" : "px-3"
+                      battingOrder.length > 9 ? "px-1" : "px-2"
                     }`}
                   >
                     Player
@@ -358,7 +358,7 @@ export default function BattingOrder({
                         onDragEnd={isEditMode ? handleDragEnd : undefined}
                         className={`py-2 text-center text-xs font-medium ${
                           isEditMode ? "cursor-move" : "cursor-default"
-                        } ${battingOrder.length > 11 ? "px-1" : "px-2"} ${
+                        } ${battingOrder.length > 9 ? "px-0.5" : "px-1"} ${
                           draggedIndex === index ? "opacity-50 scale-95" : ""
                         } ${
                           hasAnyViolation
@@ -397,30 +397,6 @@ export default function BattingOrder({
           </div>
 
           <div className="mt-6 space-y-3">
-            <div className="p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30 shadow-md print:hidden">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-[#354d74] font-medium">
-                  Total Batters: {battingOrder.length}
-                </div>
-                {hasAnyViolations() && (
-                  <div className="text-sm text-red-600 font-medium flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Rule Violations Detected
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div
               ref={rulesRef}
               className="p-3 bg-blue-50/80 backdrop-blur-sm rounded-lg border border-blue-200/50 print:hidden cursor-pointer"

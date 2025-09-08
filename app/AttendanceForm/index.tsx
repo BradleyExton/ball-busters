@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { players } from "../data/players";
 
 interface AttendanceFormProps {
@@ -14,8 +14,31 @@ export default function AttendanceForm({
 }: AttendanceFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Ref for attendance card container to detect outside clicks
+  const attendanceRef = useRef<HTMLDivElement>(null);
+
+  // Handle outside click to collapse attendance card
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        attendanceRef.current &&
+        !attendanceRef.current.contains(event.target as Node)
+      ) {
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 mb-8">
+    <div
+      ref={attendanceRef}
+      className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 mb-8"
+    >
       {/* Collapsible Header */}
       <div
         className="p-4 sm:p-6 cursor-pointer hover:bg-white/20 transition-colors duration-200"
