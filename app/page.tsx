@@ -19,6 +19,7 @@ function HomeContent() {
   const [isGameGenerated, setIsGameGenerated] = useState(false);
   const [battingOrder, setBattingOrder] = useState<string[]>([]);
   const [isAttendanceCollapsed, setIsAttendanceCollapsed] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Load shared game state from URL parameters
   useEffect(() => {
@@ -81,6 +82,11 @@ function HomeContent() {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
+      setIsCopied(true);
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
     } catch (error) {
       // Silent fallback - do nothing if clipboard fails
       console.error("Failed to copy to clipboard:", error);
@@ -518,22 +524,47 @@ function HomeContent() {
                   </button>
                   <button
                     onClick={shareGame}
-                    className="w-full sm:w-auto px-4 py-2 bg-[#D22237] text-white rounded-lg hover:bg-red-700 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                    className={`w-full sm:w-auto px-4 py-2 rounded-lg hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg flex items-center justify-center gap-2 ${
+                      isCopied
+                        ? "bg-green-600 text-white hover:bg-green-700"
+                        : "bg-[#D22237] text-white hover:bg-red-700"
+                    }`}
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                      />
-                    </svg>
-                    Share
+                    {isCopied ? (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                          />
+                        </svg>
+                        Share
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={resetGame}

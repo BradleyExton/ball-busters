@@ -1,15 +1,30 @@
 "use client";
 
 import { players } from "../data/players";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 // BenchSection component for mobile view
 function BenchSection({
   players,
   inningNumber,
+  isEditMode = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   players: string[];
   inningNumber: number;
+  isEditMode?: boolean;
+  onDragStart?: (
+    e: React.DragEvent,
+    player: string,
+    inning: number,
+    position: string
+  ) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, inning: number, position: string) => void;
+  onDragEnd?: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const maxVisible = 3; // Show max 3 players by default on mobile
@@ -17,7 +32,13 @@ function BenchSection({
   const visiblePlayers = isExpanded ? players : players.slice(0, maxVisible);
 
   return (
-    <div className="py-2 px-3 bg-[#354d74]/20 backdrop-blur-sm rounded border border-white/20">
+    <div
+      className="py-2 px-3 bg-[#354d74]/20 backdrop-blur-sm rounded border border-white/20"
+      onDragOver={isEditMode ? onDragOver : undefined}
+      onDrop={
+        isEditMode ? (e) => onDrop?.(e, inningNumber - 1, "bench") : undefined
+      }
+    >
       <div className="flex justify-between items-start">
         <span className="text-sm font-medium text-[#354d74] flex-shrink-0">
           Bench
@@ -27,7 +48,16 @@ function BenchSection({
             {visiblePlayers.map((player, idx) => (
               <span
                 key={idx}
-                className="inline-block bg-[#354d74]/90 backdrop-blur-sm text-white px-2 py-1 rounded text-xs shadow-md"
+                className={`inline-block bg-[#354d74]/90 backdrop-blur-sm text-white px-2 py-1 rounded text-xs shadow-md ${
+                  isEditMode ? "cursor-move hover:bg-blue-600" : ""
+                }`}
+                draggable={isEditMode}
+                onDragStart={
+                  isEditMode
+                    ? (e) => onDragStart?.(e, player, inningNumber - 1, "bench")
+                    : undefined
+                }
+                onDragEnd={isEditMode ? onDragEnd : undefined}
               >
                 {player}
               </span>
@@ -100,6 +130,9 @@ export default function PositionsTable({
   const [editableAssignments, setEditableAssignments] = useState<
     InningAssignments[]
   >([]);
+  const [savedAssignments, setSavedAssignments] = useState<InningAssignments[]>(
+    []
+  );
   const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
   const [draggedFromPosition, setDraggedFromPosition] = useState<{
     inning: number;
@@ -137,80 +170,89 @@ export default function PositionsTable({
     return canPlayFromPlayable || isPreferredPosition;
   };
 
-  // Function to generate balanced assignments across all innings
-  const generateAllInnings = () => {
-    const totalInnings = 7;
-    const fieldPositions = FIELD_POSITIONS.length; // 9 positions
-    const totalPlayers = availablePlayers.length;
+  // Generate initial assignments when component mounts or when available players change
+  const initialAssignments = useMemo(() => {
+    if (availablePlayers.length >= 9) {
+      const totalInnings = 7;
+      const fieldPositions = FIELD_POSITIONS.length; // 9 positions
+      const totalPlayers = availablePlayers.length;
 
-    const allInnings: InningAssignments[] = [];
+      const allInnings: InningAssignments[] = [];
 
-    // Simple round-robin approach with randomization: rotate players through playing positions
-    for (let inning = 0; inning < totalInnings; inning++) {
-      const assignments: InningAssignments = { bench: [] };
+      // Simple round-robin approach with randomization: rotate players through playing positions
+      for (let inning = 0; inning < totalInnings; inning++) {
+        const assignments: InningAssignments = { bench: [] };
 
-      // Calculate starting index for this inning's rotation with some randomization
-      const baseStartIndex = (inning * 5) % totalPlayers;
-      const randomOffset = Math.floor(Math.random() * 3); // Add 0-2 random offset
-      const startIndex = (baseStartIndex + randomOffset) % totalPlayers;
+        // Calculate starting index for this inning's rotation with some randomization
+        const baseStartIndex = (inning * 5) % totalPlayers;
+        const randomOffset = Math.floor(Math.random() * 3); // Add 0-2 random offset
+        const startIndex = (baseStartIndex + randomOffset) % totalPlayers;
 
-      // Select 9 players to play this inning with shuffled available players
-      const shuffledPlayers = [...availablePlayers].sort(
-        () => Math.random() - 0.5
-      );
-      const playingPlayers: any[] = [];
-      for (let i = 0; i < fieldPositions; i++) {
-        const playerIndex = (startIndex + i) % totalPlayers;
-        playingPlayers.push(shuffledPlayers[playerIndex]);
-      }
+        // Select 9 players to play this inning with shuffled available players
+        const shuffledPlayers = [...availablePlayers].sort(
+          () => Math.random() - 0.5
+        );
+        const playingPlayers: any[] = [];
+        for (let i = 0; i < fieldPositions; i++) {
+          const playerIndex = (startIndex + i) % totalPlayers;
+          playingPlayers.push(shuffledPlayers[playerIndex]);
+        }
 
-      // Randomize position assignment order
-      const shuffledPositions = [...FIELD_POSITIONS].sort(
-        () => Math.random() - 0.5
-      );
-
-      // Assign players to positions using a more balanced approach
-      for (let i = 0; i < fieldPositions; i++) {
-        const position = shuffledPositions[i];
-        const availablePlayersForPosition = playingPlayers.filter((player) =>
-          canPlayerPlayPosition(player, position)
+        // Randomize position assignment order
+        const shuffledPositions = [...FIELD_POSITIONS].sort(
+          () => Math.random() - 0.5
         );
 
-        let assignedPlayer;
-        if (availablePlayersForPosition.length > 0) {
-          // Prefer players who can play this position
-          assignedPlayer = availablePlayersForPosition[0];
-        } else {
-          // Fallback to any available player
-          assignedPlayer = playingPlayers[0];
-        }
-
-        if (assignedPlayer) {
-          assignments[position] = assignedPlayer.name;
-          // Remove assigned player from available list
-          const playerIndex = playingPlayers.findIndex(
-            (p) => p.name === assignedPlayer.name
+        // Assign players to positions using a more balanced approach
+        for (let i = 0; i < fieldPositions; i++) {
+          const position = shuffledPositions[i];
+          const availablePlayersForPosition = playingPlayers.filter((player) =>
+            canPlayerPlayPosition(player, position)
           );
-          if (playerIndex > -1) {
-            playingPlayers.splice(playerIndex, 1);
+
+          let assignedPlayer;
+          if (availablePlayersForPosition.length > 0) {
+            // Prefer players who can play this position
+            assignedPlayer = availablePlayersForPosition[0];
+          } else {
+            // Fallback to any available player
+            assignedPlayer = playingPlayers[0];
+          }
+
+          if (assignedPlayer) {
+            assignments[position] = assignedPlayer.name;
+            // Remove assigned player from available list
+            const playerIndex = playingPlayers.findIndex(
+              (p) => p.name === assignedPlayer.name
+            );
+            if (playerIndex > -1) {
+              playingPlayers.splice(playerIndex, 1);
+            }
           }
         }
+
+        // Add remaining players to bench
+        const playingPlayerNames = new Set(
+          FIELD_POSITIONS.map((pos) => assignments[pos])
+        );
+        const benchPlayers = availablePlayers.filter(
+          (player) => !playingPlayerNames.has(player.name)
+        );
+
+        assignments.bench = benchPlayers.map((player) => player.name);
+        allInnings.push(assignments);
       }
 
-      // Add remaining players to bench
-      const playingPlayerNames = new Set(
-        FIELD_POSITIONS.map((pos) => assignments[pos])
-      );
-      const benchPlayers = availablePlayers.filter(
-        (player) => !playingPlayerNames.has(player.name)
-      );
-
-      assignments.bench = benchPlayers.map((player) => player.name);
-      allInnings.push(assignments);
+      return allInnings;
     }
+    return [];
+  }, [availablePlayers.length]); // Only regenerate when number of available players changes
 
-    return allInnings;
-  };
+  useEffect(() => {
+    if (initialAssignments.length > 0 && savedAssignments.length === 0) {
+      setSavedAssignments([...initialAssignments]);
+    }
+  }, [initialAssignments, savedAssignments.length]);
 
   // Drag and drop handlers for edit mode
   const handleDragStart = (
@@ -241,13 +283,68 @@ export default function PositionsTable({
     // Create new assignments array
     const newAssignments = [...editableAssignments];
 
-    // Get current player at target position
-    const targetPlayer = newAssignments[targetInning][targetPosition];
+    // Handle bench position specially since it's an array
+    if (targetPosition === "bench") {
+      // Add dragged player to target bench
+      if (!newAssignments[targetInning].bench) {
+        newAssignments[targetInning].bench = [];
+      }
+      newAssignments[targetInning].bench.push(draggedPlayer);
 
-    // Swap players
-    newAssignments[draggedFromPosition.inning][draggedFromPosition.position] =
-      targetPlayer;
-    newAssignments[targetInning][targetPosition] = draggedPlayer;
+      // Remove dragged player from source position
+      if (draggedFromPosition.position === "bench") {
+        // Remove from source bench
+        const sourceIndex =
+          newAssignments[draggedFromPosition.inning].bench.indexOf(
+            draggedPlayer
+          );
+        if (sourceIndex > -1) {
+          newAssignments[draggedFromPosition.inning].bench.splice(
+            sourceIndex,
+            1
+          );
+        }
+      } else {
+        // Remove from field position and set to empty
+        newAssignments[draggedFromPosition.inning][
+          draggedFromPosition.position
+        ] = "";
+      }
+    } else if (draggedFromPosition.position === "bench") {
+      // Moving from bench to field position
+      const targetPlayer = newAssignments[targetInning][targetPosition];
+
+      // Set dragged player to target field position
+      newAssignments[targetInning][targetPosition] = draggedPlayer;
+
+      // Remove dragged player from source bench
+      const sourceIndex =
+        newAssignments[draggedFromPosition.inning].bench.indexOf(draggedPlayer);
+      if (sourceIndex > -1) {
+        newAssignments[draggedFromPosition.inning].bench.splice(sourceIndex, 1);
+      }
+
+      // If there was a player at target position, move them to source bench
+      if (targetPlayer) {
+        if (!newAssignments[draggedFromPosition.inning].bench) {
+          newAssignments[draggedFromPosition.inning].bench = [];
+        }
+        // Handle targetPlayer being either string or string array
+        const playerToAdd =
+          typeof targetPlayer === "string" ? targetPlayer : targetPlayer[0];
+        if (playerToAdd) {
+          newAssignments[draggedFromPosition.inning].bench.push(playerToAdd);
+        }
+      }
+    } else {
+      // Regular field position to field position swap
+      const targetPlayer = newAssignments[targetInning][targetPosition];
+
+      // Swap players
+      newAssignments[draggedFromPosition.inning][draggedFromPosition.position] =
+        targetPlayer || "";
+      newAssignments[targetInning][targetPosition] = draggedPlayer;
+    }
 
     setEditableAssignments(newAssignments);
     setDraggedPlayer(null);
@@ -262,9 +359,13 @@ export default function PositionsTable({
   // Toggle edit mode
   const toggleEditMode = () => {
     if (!isEditMode) {
-      // Entering edit mode - initialize editable assignments
-      const generated = generateAllInnings();
-      setEditableAssignments([...generated]);
+      // Entering edit mode - initialize editable assignments from saved assignments
+      if (savedAssignments.length > 0) {
+        setEditableAssignments([...savedAssignments]);
+      } else if (initialAssignments.length > 0) {
+        setSavedAssignments([...initialAssignments]);
+        setEditableAssignments([...initialAssignments]);
+      }
     }
     setIsEditMode(!isEditMode);
   };
@@ -272,7 +373,9 @@ export default function PositionsTable({
   // Generate assignments for display
   const allAssignments = isEditMode
     ? editableAssignments
-    : generateAllInnings();
+    : savedAssignments.length > 0
+    ? savedAssignments
+    : initialAssignments;
 
   // Don't render table if fewer than 9 players (minimum for field positions)
   if (availablePlayers.length < 9) {
@@ -419,6 +522,7 @@ export default function PositionsTable({
               <button
                 onClick={() => {
                   // Save changes
+                  setSavedAssignments([...editableAssignments]);
                   setIsEditMode(false);
                 }}
                 className="px-4 py-2 bg-[#D22237] text-white rounded-lg hover:bg-[#B01E31] transition-colors duration-200 flex items-center gap-2"
@@ -440,9 +544,9 @@ export default function PositionsTable({
               </button>
               <button
                 onClick={() => {
-                  // Cancel changes
+                  // Cancel changes - revert to saved assignments
+                  setEditableAssignments([...savedAssignments]);
                   setIsEditMode(false);
-                  setEditableAssignments([]);
                 }}
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2"
               >
@@ -544,6 +648,11 @@ export default function PositionsTable({
                 <BenchSection
                   players={inning.assignments.bench}
                   inningNumber={inning.inningNumber}
+                  isEditMode={isEditMode}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
                 />
               )}
             </div>
@@ -630,14 +739,37 @@ export default function PositionsTable({
               {innings.map((inning) => (
                 <td
                   key={`bench-${inning.inningNumber}`}
-                  className="px-2 py-2 text-center text-xs"
+                  className={`px-2 py-2 text-center text-xs ${
+                    isEditMode ? "cursor-move" : ""
+                  }`}
+                  onDragOver={isEditMode ? handleDragOver : undefined}
+                  onDrop={
+                    isEditMode
+                      ? (e) => handleDrop(e, inning.inningNumber - 1, "bench")
+                      : undefined
+                  }
                 >
                   {inning.assignments.bench.length > 0 ? (
                     <div className="flex flex-wrap gap-1 justify-center">
                       {inning.assignments.bench.map((player, idx) => (
                         <span
                           key={idx}
-                          className="inline-block bg-[#354d74] text-white px-1 py-0.5 rounded text-xs font-medium"
+                          className={`inline-block bg-[#354d74] text-white px-1 py-0.5 rounded text-xs font-medium ${
+                            isEditMode ? "cursor-move hover:bg-blue-600" : ""
+                          }`}
+                          draggable={isEditMode}
+                          onDragStart={
+                            isEditMode
+                              ? (e) =>
+                                  handleDragStart(
+                                    e,
+                                    player,
+                                    inning.inningNumber - 1,
+                                    "bench"
+                                  )
+                              : undefined
+                          }
+                          onDragEnd={isEditMode ? handleDragEnd : undefined}
                         >
                           {player}
                         </span>
