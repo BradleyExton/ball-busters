@@ -259,12 +259,12 @@ export default function PositionsTable({
   // Generate all innings with balanced play time only if game is generated
   if (!isGenerated) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+      <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
         <h1 className="text-2xl font-semibold text-gray-900 mb-6">
           Team Positions
         </h1>
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-white/60 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md border border-white/30">
             <svg
               className="w-8 h-8 text-gray-400"
               fill="none"
@@ -301,7 +301,7 @@ export default function PositionsTable({
   }));
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">
         Team Positions
       </h1>
@@ -311,7 +311,7 @@ export default function PositionsTable({
         {innings.map((inning) => (
           <div
             key={inning.inningNumber}
-            className="border border-gray-200 rounded-lg p-4"
+            className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-4 shadow-md hover:bg-white/70 transition-all duration-200"
           >
             <h3 className="text-lg font-semibold text-[#D22237] mb-3">
               Inning {inning.inningNumber}
@@ -320,7 +320,7 @@ export default function PositionsTable({
               {FIELD_POSITIONS.map((position) => (
                 <div
                   key={`${inning.inningNumber}-${position}`}
-                  className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded"
+                  className="flex justify-between items-center py-2 px-3 bg-white/40 backdrop-blur-sm rounded border border-white/20"
                 >
                   <span className="text-sm font-medium text-[#354d74]">
                     {position}
@@ -331,7 +331,7 @@ export default function PositionsTable({
                 </div>
               ))}
               {inning.assignments.bench.length > 0 && (
-                <div className="flex justify-between items-center py-2 px-3 bg-[#354d74]/10 rounded">
+                <div className="flex justify-between items-center py-2 px-3 bg-[#354d74]/20 backdrop-blur-sm rounded border border-white/20">
                   <span className="text-sm font-medium text-[#354d74]">
                     Bench
                   </span>
@@ -339,7 +339,7 @@ export default function PositionsTable({
                     {inning.assignments.bench.map((player, idx) => (
                       <span
                         key={idx}
-                        className="inline-block bg-[#354d74] text-white px-2 py-1 rounded text-xs"
+                        className="inline-block bg-[#354d74]/90 backdrop-blur-sm text-white px-2 py-1 rounded text-xs shadow-md"
                       >
                         {player}
                       </span>

@@ -30,7 +30,7 @@ export default function BattingOrder({
 
   if (availablePlayers.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+      <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">
           Batting Order
         </h2>
@@ -42,7 +42,7 @@ export default function BattingOrder({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">Batting Order</h2>
       </div>
@@ -54,10 +54,10 @@ export default function BattingOrder({
             {battingOrder.map((playerName, index) => (
               <div
                 key={`${playerName}-${index}`}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30 shadow-md hover:bg-white/70 transition-all duration-200"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center justify-center w-6 h-6 bg-[#D22237] text-white rounded-full font-bold text-xs">
+                  <div className="flex items-center justify-center w-6 h-6 bg-[#D22237]/90 backdrop-blur-sm text-white rounded-full font-bold text-xs shadow-lg">
                     {index + 1}
                   </div>
                   <div>
@@ -116,7 +116,7 @@ export default function BattingOrder({
             </table>
           </div>
 
-          <div className="mt-6 p-4 bg-[#354d74]/10 rounded-lg">
+          <div className="mt-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30 shadow-md">
             <div className="text-sm text-[#354d74] font-medium">
               Total Batters: {battingOrder.length}
             </div>

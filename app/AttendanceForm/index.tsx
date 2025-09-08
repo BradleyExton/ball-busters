@@ -15,10 +15,10 @@ export default function AttendanceForm({
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-8">
+    <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 mb-8">
       {/* Collapsible Header */}
       <div
-        className="p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+        className="p-6 cursor-pointer hover:bg-white/20 transition-colors duration-200"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
@@ -26,7 +26,7 @@ export default function AttendanceForm({
             <h2 className="text-2xl font-semibold text-gray-900">
               Player Attendance
             </h2>
-            <span className="text-lg font-bold text-[#D22237] bg-red-50 px-3 py-1 rounded-full">
+            <span className="text-lg font-bold text-[#D22237] bg-red-50/80 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
               {attendingPlayers.length} / {players.length}
             </span>
           </div>
@@ -74,13 +74,21 @@ export default function AttendanceForm({
       </div>
 
       {/* Collapsible Content */}
-      {isExpanded && (
-        <div className="px-6 pb-6">
+      <div 
+        className={`overflow-hidden transition-all duration-500 ease-in-out ${
+          isExpanded 
+            ? 'max-h-screen opacity-100' 
+            : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className={`px-6 pb-6 transform transition-transform duration-500 ease-in-out ${
+          isExpanded ? 'translate-y-0' : '-translate-y-4'
+        }`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {players.map((player) => (
               <label
                 key={player.name}
-                className="group flex items-center space-x-3 cursor-pointer p-4 rounded-lg border-2 border-gray-100 hover:border-[#D22237] transition-all duration-200 bg-gray-50 hover:bg-red-50"
+                className="group flex items-center space-x-3 cursor-pointer p-4 rounded-lg border-2 border-white/30 hover:border-[#D22237]/60 transition-all duration-200 bg-white/40 backdrop-blur-sm hover:bg-red-50/60 shadow-md"
               >
                 <div className="relative">
                   <input
@@ -125,7 +133,7 @@ export default function AttendanceForm({
             ))}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

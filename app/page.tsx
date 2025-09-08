@@ -79,7 +79,7 @@ export default function Home() {
         />
 
         {/* Game Generation Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-gray-900">
@@ -94,7 +94,7 @@ export default function Home() {
                 <button
                   onClick={generateGame}
                   disabled={attendingPlayers.length === 0}
-                  className="px-6 py-3 bg-[#D22237] text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
+                  className="px-6 py-3 bg-[#D22237] text-white rounded-lg hover:bg-red-700 hover:scale-105 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                 >
                   Generate Game
                 </button>
@@ -102,13 +102,13 @@ export default function Home() {
                 <>
                   <button
                     onClick={generateGame}
-                    className="px-4 py-2 bg-[#354d74] text-white rounded-lg hover:bg-blue-800 transition-colors duration-200 font-medium"
+                    className="px-4 py-2 bg-[#354d74] text-white rounded-lg hover:bg-[#2a3d5f] hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
                     Regenerate
                   </button>
                   <button
                     onClick={resetGame}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 font-medium"
+                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                   >
                     Reset
                   </button>
