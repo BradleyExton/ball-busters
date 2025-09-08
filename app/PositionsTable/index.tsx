@@ -49,19 +49,15 @@ export default function PositionsTable({
 
   // Helper function to check if a player can play a specific position
   const canPlayerPlayPosition = (player: any, position: string): boolean => {
-    // Convert position back to enum format for comparison
-    const positionEnum = Object.keys(POSITION_MAP).find(
-      (key) => POSITION_MAP[key] === position
-    );
-
     // Check if position is in playablePositions
     const canPlayFromPlayable = player.playablePositions.some(
       (pos: string) => POSITION_MAP[pos] === position
     );
 
-    // Check if position matches preferred position
+    // Check if position matches preferred position (only if not "none")
     const isPreferredPosition =
       player.preferredPosition !== "none" &&
+      player.preferredPosition !== null &&
       (POSITION_MAP[player.preferredPosition] === position ||
         player.preferredPosition === position);
 
@@ -223,53 +219,158 @@ export default function PositionsTable({
         }
       });
 
-      // Second pass: fill remaining positions with randomization
+      // Second pass: fill remaining positions with constraint-aware assignment
       const remainingPlayers = playingPlayers.filter(
         (player) => !usedPlayers.has(player.name)
       );
 
-      // Shuffle remaining players for random position assignment
-      const shuffledRemainingPlayers = [...remainingPlayers].sort(
-        () => Math.random() - 0.5
-      );
+      // Use a smarter assignment that tries multiple options before giving up
+      const unassignedPlayers = [...remainingPlayers];
 
-      remainingPositions.forEach((position, index) => {
-        if (index < shuffledRemainingPlayers.length) {
-          // Create a pool of players who can play this position
-          const eligiblePlayers = shuffledRemainingPlayers
-            .slice(index)
-            .filter((player) => canPlayerPlayPosition(player, position));
+      // Sort positions by how many players can fill them (hardest first)
+      const sortedRemainingPositions = [...remainingPositions].sort((a, b) => {
+        const playersForA = unassignedPlayers.filter((p) =>
+          canPlayerPlayPosition(p, a)
+        ).length;
+        const playersForB = unassignedPlayers.filter((p) =>
+          canPlayerPlayPosition(p, b)
+        ).length;
+        return playersForA - playersForB;
+      });
 
-          let assignedPlayer;
-          if (eligiblePlayers.length > 0) {
-            // Randomly select from eligible players
-            assignedPlayer =
-              eligiblePlayers[
-                Math.floor(Math.random() * eligiblePlayers.length)
-              ];
-            // Move assigned player to current index
-            const assignedIndex =
-              shuffledRemainingPlayers.indexOf(assignedPlayer);
-            [
-              shuffledRemainingPlayers[index],
-              shuffledRemainingPlayers[assignedIndex],
-            ] = [
-              shuffledRemainingPlayers[assignedIndex],
-              shuffledRemainingPlayers[index],
-            ];
-          } else {
-            // If no eligible players, assign randomly from remaining
-            assignedPlayer = shuffledRemainingPlayers[index];
-          }
+      sortedRemainingPositions.forEach((position) => {
+        // Find all unassigned players who can play this position
+        const eligiblePlayers = unassignedPlayers.filter((player) =>
+          canPlayerPlayPosition(player, position)
+        );
+
+        if (eligiblePlayers.length > 0) {
+          // Randomly select from eligible players
+          const assignedPlayer =
+            eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
 
           assignments[position] = assignedPlayer.name;
           usedPlayers.add(assignedPlayer.name);
+
+          // Remove assigned player from unassigned list
+          const playerIndex = unassignedPlayers.indexOf(assignedPlayer);
+          unassignedPlayers.splice(playerIndex, 1);
+        } else {
+          // If no eligible players, try to reassign from already assigned players
+          let positionFilled = false;
+
+          // First try: swap with unassigned players
+          for (const assignedPosition of Object.keys(assignments)) {
+            if (assignedPosition === "bench" || positionFilled) continue;
+
+            const assignedPlayerName = assignments[assignedPosition];
+            const assignedPlayer = playingPlayers.find(
+              (p) => p.name === assignedPlayerName
+            );
+
+            // Check if assigned player can play current position and someone else can take their spot
+            if (canPlayerPlayPosition(assignedPlayer, position)) {
+              const replacements = unassignedPlayers.filter((p) =>
+                canPlayerPlayPosition(p, assignedPosition)
+              );
+
+              if (replacements.length > 0) {
+                // Swap them
+                const replacement =
+                  replacements[Math.floor(Math.random() * replacements.length)];
+                assignments[assignedPosition] = replacement.name;
+                assignments[position] = assignedPlayer.name;
+
+                // Update unassigned players list
+                const replacementIndex = unassignedPlayers.indexOf(replacement);
+                unassignedPlayers.splice(replacementIndex, 1);
+                positionFilled = true;
+                break;
+              }
+            }
+          }
+
+          // Second try: swap between assigned players if first try failed
+          if (!positionFilled) {
+            for (const assignedPosition1 of Object.keys(assignments)) {
+              if (assignedPosition1 === "bench" || positionFilled) continue;
+
+              const player1Name = assignments[assignedPosition1];
+              const player1 = playingPlayers.find(
+                (p) => p.name === player1Name
+              );
+
+              // Check if player1 can play the empty position
+              if (canPlayerPlayPosition(player1, position)) {
+                // Look for another assigned player who can take player1's position
+                for (const assignedPosition2 of Object.keys(assignments)) {
+                  if (
+                    assignedPosition2 === "bench" ||
+                    assignedPosition2 === assignedPosition1
+                  )
+                    continue;
+
+                  const player2Name = assignments[assignedPosition2];
+                  const player2 = playingPlayers.find(
+                    (p) => p.name === player2Name
+                  );
+
+                  // Check if player2 can take player1's position
+                  if (canPlayerPlayPosition(player2, assignedPosition1)) {
+                    // Perform the swap
+                    assignments[assignedPosition1] = player2.name;
+                    assignments[assignedPosition2] = ""; // Will be filled next
+                    assignments[position] = player1.name;
+                    positionFilled = true;
+
+                    // Now we need to fill assignedPosition2 with someone
+                    // Try unassigned players first
+                    const canFillPosition2 = unassignedPlayers.filter((p) =>
+                      canPlayerPlayPosition(p, assignedPosition2)
+                    );
+
+                    if (canFillPosition2.length > 0) {
+                      const filler =
+                        canFillPosition2[
+                          Math.floor(Math.random() * canFillPosition2.length)
+                        ];
+                      assignments[assignedPosition2] = filler.name;
+                      const fillerIndex = unassignedPlayers.indexOf(filler);
+                      unassignedPlayers.splice(fillerIndex, 1);
+                    } else {
+                      // Put player2 back and try next combination
+                      assignments[assignedPosition1] = player1.name;
+                      assignments[assignedPosition2] = player2.name;
+                      assignments[position] = "";
+                      positionFilled = false;
+                      continue;
+                    }
+                    break;
+                  }
+                }
+                if (positionFilled) break;
+              }
+            }
+          }
+
+          // Last resort: if we still can't fill the position, assign any unassigned player
+          // This violates position constraints but ensures all positions are filled
+          if (!positionFilled && unassignedPlayers.length > 0) {
+            const anyPlayer =
+              unassignedPlayers[
+                Math.floor(Math.random() * unassignedPlayers.length)
+              ];
+            assignments[position] = anyPlayer.name;
+            const playerIndex = unassignedPlayers.indexOf(anyPlayer);
+            unassignedPlayers.splice(playerIndex, 1);
+          }
         }
       });
 
-      // Remaining players go to bench
+      // Remaining players go to bench - should be everyone NOT selected to play this inning
+      const playingPlayerNames = new Set(playingPlayers.map((p) => p.name));
       const benchPlayers = availablePlayers.filter(
-        (player) => !usedPlayers.has(player.name)
+        (player) => !playingPlayerNames.has(player.name)
       );
 
       assignments.bench = benchPlayers.map((player) => player.name);
