@@ -1,6 +1,59 @@
 "use client";
 
 import { players } from "../data/players";
+import { useState } from "react";
+
+// BenchSection component for mobile view
+function BenchSection({
+  players,
+  inningNumber,
+}: {
+  players: string[];
+  inningNumber: number;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const maxVisible = 3; // Show max 3 players by default on mobile
+  const hasMore = players.length > maxVisible;
+  const visiblePlayers = isExpanded ? players : players.slice(0, maxVisible);
+
+  return (
+    <div className="py-2 px-3 bg-[#354d74]/20 backdrop-blur-sm rounded border border-white/20">
+      <div className="flex justify-between items-start">
+        <span className="text-sm font-medium text-[#354d74] flex-shrink-0">
+          Bench
+        </span>
+        <div className="flex-1 ml-3">
+          <div className="flex flex-wrap gap-1">
+            {visiblePlayers.map((player, idx) => (
+              <span
+                key={idx}
+                className="inline-block bg-[#354d74]/90 backdrop-blur-sm text-white px-2 py-1 rounded text-xs shadow-md"
+              >
+                {player}
+              </span>
+            ))}
+            {hasMore && !isExpanded && (
+              <button
+                onClick={() => setIsExpanded(true)}
+                className="inline-block bg-[#354d74]/60 backdrop-blur-sm text-white px-2 py-1 rounded text-xs shadow-md hover:bg-[#354d74]/80 transition-colors"
+              >
+                +{players.length - maxVisible}
+              </button>
+            )}
+          </div>
+          {hasMore && isExpanded && (
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="mt-1 text-xs text-[#354d74] hover:text-[#354d74]/80 transition-colors"
+            >
+              Show less
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Define the softball field positions in order
 const FIELD_POSITIONS = [
@@ -470,21 +523,10 @@ export default function PositionsTable({
                 </div>
               ))}
               {inning.assignments.bench.length > 0 && (
-                <div className="flex justify-between items-center py-2 px-3 bg-[#354d74]/20 backdrop-blur-sm rounded border border-white/20">
-                  <span className="text-sm font-medium text-[#354d74]">
-                    Bench
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {inning.assignments.bench.map((player, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-block bg-[#354d74]/90 backdrop-blur-sm text-white px-2 py-1 rounded text-xs shadow-md"
-                      >
-                        {player}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <BenchSection
+                  players={inning.assignments.bench}
+                  inningNumber={inning.inningNumber}
+                />
               )}
             </div>
           </div>
