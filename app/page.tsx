@@ -20,6 +20,7 @@ function HomeContent() {
   const [isGameGenerated, setIsGameGenerated] = useState(false);
   const [battingOrder, setBattingOrder] = useState<string[]>([]);
   const [pitchingOrder, setPitchingOrder] = useState<{ battingPosition: number; batter: string; pitcher: string }[]>([]);
+  const [positionAssignments, setPositionAssignments] = useState<any[]>([]);
   const [isAttendanceCollapsed, setIsAttendanceCollapsed] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -27,6 +28,8 @@ function HomeContent() {
   useEffect(() => {
     const sharedAttendance = searchParams.get("attendance");
     const sharedBattingOrder = searchParams.get("batting");
+    const sharedPitchingOrder = searchParams.get("pitching");
+    const sharedPositions = searchParams.get("positions");
 
     if (sharedAttendance && sharedBattingOrder) {
       try {
@@ -48,6 +51,31 @@ function HomeContent() {
         if (validAttendance.length > 0 && validBattingOrder.length > 0) {
           setAttendingPlayers(validAttendance);
           setBattingOrder(validBattingOrder);
+
+          // Load pitching order if available
+          if (sharedPitchingOrder) {
+            try {
+              const decodedPitchingOrder = JSON.parse(
+                decodeURIComponent(sharedPitchingOrder)
+              );
+              setPitchingOrder(decodedPitchingOrder);
+            } catch (error) {
+              console.error("Error parsing pitching order:", error);
+            }
+          }
+
+          // Load position assignments if available
+          if (sharedPositions) {
+            try {
+              const decodedPositions = JSON.parse(
+                decodeURIComponent(sharedPositions)
+              );
+              setPositionAssignments(decodedPositions);
+            } catch (error) {
+              console.error("Error parsing position assignments:", error);
+            }
+          }
+
           setIsGameGenerated(true);
           setIsAttendanceCollapsed(true);
         }
@@ -66,10 +94,12 @@ function HomeContent() {
     // Reset game when attendance changes
     setIsGameGenerated(false);
     setBattingOrder([]);
+    setPitchingOrder([]);
+    setPositionAssignments([]);
     setIsAttendanceCollapsed(false);
   };
 
-  // Share functionality
+  // Share functionality - generates read-only /shared URL with current edited state
   const shareGame = async () => {
     if (!isGameGenerated || battingOrder.length === 0) {
       return;
@@ -78,9 +108,11 @@ function HomeContent() {
     const shareData = {
       attendance: encodeURIComponent(JSON.stringify(attendingPlayers)),
       batting: encodeURIComponent(JSON.stringify(battingOrder)),
+      pitching: encodeURIComponent(JSON.stringify(pitchingOrder)),
+      positions: encodeURIComponent(JSON.stringify(positionAssignments)),
     };
 
-    const shareUrl = `${window.location.origin}${window.location.pathname}?attendance=${shareData.attendance}&batting=${shareData.batting}`;
+    const shareUrl = `${window.location.origin}/shared?attendance=${shareData.attendance}&batting=${shareData.batting}&pitching=${shareData.pitching}&positions=${shareData.positions}`;
 
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -117,6 +149,7 @@ function HomeContent() {
     setIsGameGenerated(false);
     setBattingOrder([]);
     setPitchingOrder([]);
+    setPositionAssignments([]);
     setIsAttendanceCollapsed(false);
     // Clear URL parameters
     router.push(window.location.pathname);
@@ -374,10 +407,13 @@ function HomeContent() {
           pitchingOrder={pitchingOrder}
           isGenerated={isGameGenerated}
           onBattingOrderChange={setBattingOrder}
+          onPitchingOrderChange={setPitchingOrder}
         />
         <PositionsTable
           attendingPlayers={attendingPlayers}
           isGenerated={isGameGenerated}
+          sharedPositions={positionAssignments}
+          onPositionsChange={setPositionAssignments}
         />
       </div>
 

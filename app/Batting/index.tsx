@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { players } from "../data/players";
+import { generatePitchingOrder, type Player } from "../utils/positionUtils";
 
 interface BattingOrderProps {
   attendingPlayers: string[];
@@ -9,6 +10,7 @@ interface BattingOrderProps {
   pitchingOrder: { battingPosition: number; batter: string; pitcher: string }[];
   isGenerated: boolean;
   onBattingOrderChange: (newOrder: string[]) => void;
+  onPitchingOrderChange?: (newPitchingOrder: { battingPosition: number; batter: string; pitcher: string }[]) => void;
 }
 
 export default function BattingOrder({
@@ -17,6 +19,7 @@ export default function BattingOrder({
   pitchingOrder,
   isGenerated,
   onBattingOrderChange,
+  onPitchingOrderChange,
 }: BattingOrderProps) {
   // Filter players to only include those attending
   const availablePlayers = players.filter((player) =>
@@ -192,6 +195,13 @@ export default function BattingOrder({
     newOrder.splice(dropIndex, 0, draggedPlayer);
 
     onBattingOrderChange(newOrder);
+
+    // Regenerate pitching order based on new batting order
+    if (onPitchingOrderChange) {
+      const newPitchingOrder = generatePitchingOrder(newOrder, availablePlayers as Player[]);
+      onPitchingOrderChange(newPitchingOrder);
+    }
+
     setDraggedIndex(null);
   };
 

@@ -99,11 +99,15 @@ function BenchSection({
 interface PositionsTableProps {
   attendingPlayers: string[];
   isGenerated: boolean;
+  sharedPositions?: InningAssignments[];
+  onPositionsChange?: (positions: InningAssignments[]) => void;
 }
 
 export default function PositionsTable({
   attendingPlayers,
   isGenerated,
+  sharedPositions = [],
+  onPositionsChange,
 }: PositionsTableProps) {
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -148,10 +152,19 @@ export default function PositionsTable({
   }, [availablePlayers.length]); // Only regenerate when number of available players changes
 
   useEffect(() => {
-    if (initialAssignments.length > 0 && savedAssignments.length === 0) {
+    // Load shared positions if available, otherwise use initial assignments
+    if (sharedPositions.length > 0 && savedAssignments.length === 0) {
+      setSavedAssignments([...sharedPositions]);
+      if (onPositionsChange) {
+        onPositionsChange([...sharedPositions]);
+      }
+    } else if (initialAssignments.length > 0 && savedAssignments.length === 0) {
       setSavedAssignments([...initialAssignments]);
+      if (onPositionsChange) {
+        onPositionsChange([...initialAssignments]);
+      }
     }
-  }, [initialAssignments, savedAssignments.length]);
+  }, [initialAssignments, savedAssignments.length, sharedPositions]);
 
   // Reset saved assignments when attending players change
   useEffect(() => {
@@ -429,6 +442,10 @@ export default function PositionsTable({
                 onClick={() => {
                   // Save changes
                   setSavedAssignments([...editableAssignments]);
+                  // Notify parent component of changes
+                  if (onPositionsChange) {
+                    onPositionsChange([...editableAssignments]);
+                  }
                   setIsEditMode(false);
                 }}
                 className="px-4 py-2 bg-[#D22237] text-white rounded-lg hover:bg-[#B01E31] transition-colors duration-200 flex items-center gap-2"
