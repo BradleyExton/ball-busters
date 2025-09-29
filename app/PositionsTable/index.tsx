@@ -2,6 +2,17 @@
 
 import { players } from "../data/players";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { 
+  generateOptimizedAssignments,
+  canPlayerPlayPosition,
+  validateAssignments,
+  calculatePlayerStats,
+  analyzeBenchGenderBalance,
+  FIELD_POSITIONS,
+  POSITION_MAP,
+  type InningAssignments,
+  type Player
+} from "../utils/positionUtils";
 
 // BenchSection component for mobile view
 function BenchSection({
@@ -85,37 +96,6 @@ function BenchSection({
   );
 }
 
-// Define the softball field positions in order
-const FIELD_POSITIONS = [
-  "Catcher",
-  "1B",
-  "2B",
-  "3B",
-  "Rover",
-  "SS",
-  "RF",
-  "CF",
-  "LF",
-];
-
-// Map enum values to display names
-const POSITION_MAP: { [key: string]: string } = {
-  CATCHER: "Catcher",
-  FIRST_BASE: "1B",
-  SECOND_BASE: "2B",
-  THIRD_BASE: "3B",
-  SHORTSTOP: "SS",
-  LEFT_FIELD: "LF",
-  CENTER_FIELD: "CF",
-  RIGHT_FIELD: "RF",
-  ROVER: "Rover",
-};
-
-interface InningAssignments {
-  [position: string]: string | string[];
-  bench: string[];
-}
-
 interface PositionsTableProps {
   attendingPlayers: string[];
   isGenerated: boolean;
@@ -144,8 +124,8 @@ export default function PositionsTable({
     attendingPlayers.includes(player.name)
   );
 
-  // Helper function to check if a player can play a specific position
-  const canPlayerPlayPosition = (player: any, position: string): boolean => {
+  // Helper function to check if a player can play a specific position (keeping for backwards compatibility)
+  const canPlayerPlayPositionLocal = (player: any, position: string): boolean => {
     // Defensive check for undefined player
     if (!player || !player.playablePositions) {
       console.error(
@@ -155,95 +135,14 @@ export default function PositionsTable({
       return false;
     }
 
-    // Check if position is in playablePositions
-    const canPlayFromPlayable = player.playablePositions.some(
-      (pos: string) => POSITION_MAP[pos] === position
-    );
-
-    // Check if position matches preferred position (only if not "none")
-    const isPreferredPosition =
-      player.preferredPosition !== "none" &&
-      player.preferredPosition !== null &&
-      (POSITION_MAP[player.preferredPosition] === position ||
-        player.preferredPosition === position);
-
-    return canPlayFromPlayable || isPreferredPosition;
+    return canPlayerPlayPosition(player as Player, position);
   };
 
   // Generate initial assignments when component mounts or when available players change
   const initialAssignments = useMemo(() => {
     if (availablePlayers.length >= 9) {
-      const totalInnings = 7;
-      const fieldPositions = FIELD_POSITIONS.length; // 9 positions
-      const totalPlayers = availablePlayers.length;
-
-      const allInnings: InningAssignments[] = [];
-
-      // Simple round-robin approach with randomization: rotate players through playing positions
-      for (let inning = 0; inning < totalInnings; inning++) {
-        const assignments: InningAssignments = { bench: [] };
-
-        // Calculate starting index for this inning's rotation with some randomization
-        const baseStartIndex = (inning * 5) % totalPlayers;
-        const randomOffset = Math.floor(Math.random() * 3); // Add 0-2 random offset
-        const startIndex = (baseStartIndex + randomOffset) % totalPlayers;
-
-        // Select 9 players to play this inning with shuffled available players
-        const shuffledPlayers = [...availablePlayers].sort(
-          () => Math.random() - 0.5
-        );
-        const playingPlayers: any[] = [];
-        for (let i = 0; i < fieldPositions; i++) {
-          const playerIndex = (startIndex + i) % totalPlayers;
-          playingPlayers.push(shuffledPlayers[playerIndex]);
-        }
-
-        // Randomize position assignment order
-        const shuffledPositions = [...FIELD_POSITIONS].sort(
-          () => Math.random() - 0.5
-        );
-
-        // Assign players to positions using a more balanced approach
-        for (let i = 0; i < fieldPositions; i++) {
-          const position = shuffledPositions[i];
-          const availablePlayersForPosition = playingPlayers.filter((player) =>
-            canPlayerPlayPosition(player, position)
-          );
-
-          let assignedPlayer;
-          if (availablePlayersForPosition.length > 0) {
-            // Prefer players who can play this position
-            assignedPlayer = availablePlayersForPosition[0];
-          } else {
-            // Fallback to any available player
-            assignedPlayer = playingPlayers[0];
-          }
-
-          if (assignedPlayer) {
-            assignments[position] = assignedPlayer.name;
-            // Remove assigned player from available list
-            const playerIndex = playingPlayers.findIndex(
-              (p) => p.name === assignedPlayer.name
-            );
-            if (playerIndex > -1) {
-              playingPlayers.splice(playerIndex, 1);
-            }
-          }
-        }
-
-        // Add remaining players to bench
-        const playingPlayerNames = new Set(
-          FIELD_POSITIONS.map((pos) => assignments[pos])
-        );
-        const benchPlayers = availablePlayers.filter(
-          (player) => !playingPlayerNames.has(player.name)
-        );
-
-        assignments.bench = benchPlayers.map((player) => player.name);
-        allInnings.push(assignments);
-      }
-
-      return allInnings;
+      // Use our new optimized algorithm
+      return generateOptimizedAssignments(availablePlayers as Player[]);
     }
     return [];
   }, [availablePlayers.length]); // Only regenerate when number of available players changes
@@ -424,7 +323,7 @@ export default function PositionsTable({
   // Check if we can fill all positions with available players
   const positionCoverage = FIELD_POSITIONS.map((position) => {
     const playersForPosition = availablePlayers.filter((player) =>
-      canPlayerPlayPosition(player, position)
+      canPlayerPlayPositionLocal(player, position)
     );
     return {
       position,
@@ -596,6 +495,93 @@ export default function PositionsTable({
           )}
         </div>
       </div>
+
+      {/* Assignment Statistics */}
+      {allAssignments.length > 0 && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">Assignment Statistics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(() => {
+              const stats = calculatePlayerStats(allAssignments, attendingPlayers);
+              const validation = validateAssignments(allAssignments, availablePlayers as Player[]);
+              const genderBalance = analyzeBenchGenderBalance(allAssignments, availablePlayers as Player[]);
+              
+              const benchTurns = stats.map(s => s.benchTurns);
+              const minBench = Math.min(...benchTurns);
+              const maxBench = Math.max(...benchTurns);
+              const benchVariance = maxBench - minBench;
+              
+              const preferredPositionRate = stats.reduce((sum, s) => sum + (s.playingTurns > 0 ? s.preferredPositionTurns / s.playingTurns : 0), 0) / stats.length;
+              
+              return (
+                <>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-900">{benchVariance}</div>
+                    <div className="text-sm text-blue-700">Max Bench Difference</div>
+                    <div className="text-xs text-blue-600">Range: {minBench}-{maxBench} turns</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-900">{(preferredPositionRate * 100).toFixed(1)}%</div>
+                    <div className="text-sm text-blue-700">Preferred Position Rate</div>
+                    <div className="text-xs text-blue-600">Players in preferred positions</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${genderBalance.isBalanced ? 'text-green-600' : 'text-orange-600'}`}>
+                      {genderBalance.isBalanced ? '⚖️' : '⚠️'}
+                    </div>
+                    <div className="text-sm text-blue-700">Gender Balance</div>
+                    <div className="text-xs text-blue-600">
+                      {genderBalance.isBalanced ? 'Well balanced' : `${(genderBalance.worstImbalance * 100).toFixed(0)}% deviation`}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${validation.isValid ? 'text-green-600' : 'text-red-600'}`}>
+                      {validation.isValid ? '✓' : '✗'}
+                    </div>
+                    <div className="text-sm text-blue-700">Constraint Validation</div>
+                    <div className="text-xs text-blue-600">
+                      {validation.isValid ? 'All constraints met' : `${validation.issues.length} issues`}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+          
+          {/* Gender Balance Details */}
+          {(() => {
+            const genderBalance = analyzeBenchGenderBalance(allAssignments, availablePlayers as Player[]);
+            const teamMales = availablePlayers.filter(p => (p as any).gender === 'MALE').length;
+            const teamFemales = availablePlayers.filter(p => (p as any).gender === 'FEMALE').length;
+            
+            return (
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <h4 className="text-md font-medium text-blue-800 mb-2">Bench Gender Distribution by Inning</h4>
+                <div className="text-xs text-blue-600 mb-2">
+                  Team composition: {teamMales} males, {teamFemales} females
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-xs">
+                  {genderBalance.inningBreakdown.map((inning) => (
+                    <div key={inning.inning} className="text-center">
+                      <div className="font-medium text-blue-700">Inn {inning.inning}</div>
+                      <div className="text-blue-600">
+                        {inning.malesOnBench}M / {inning.femalesOnBench}F
+                      </div>
+                      {inning.totalOnBench > 1 && (
+                        <div className={`text-xs ${
+                          (inning.malesOnBench === 0 || inning.femalesOnBench === 0) ? 'text-orange-600' : 'text-green-600'
+                        }`}>
+                          {(inning.malesOnBench === 0 || inning.femalesOnBench === 0) ? '⚠️' : '✓'}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* Mobile View - Cards per inning */}
       <div className="block lg:hidden space-y-6">
