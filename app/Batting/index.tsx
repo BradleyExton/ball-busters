@@ -6,6 +6,7 @@ import { players } from "../data/players";
 interface BattingOrderProps {
   attendingPlayers: string[];
   battingOrder: string[];
+  pitchingOrder: { battingPosition: number; batter: string; pitcher: string }[];
   isGenerated: boolean;
   onBattingOrderChange: (newOrder: string[]) => void;
 }
@@ -13,6 +14,7 @@ interface BattingOrderProps {
 export default function BattingOrder({
   attendingPlayers,
   battingOrder,
+  pitchingOrder,
   isGenerated,
   onBattingOrderChange,
 }: BattingOrderProps) {
@@ -28,6 +30,35 @@ export default function BattingOrder({
     return players.find((p) => p.name === playerName)?.gender === "MALE"
       ? "M"
       : "F";
+  };
+
+  // Helper functions for pitching information
+  const getPitcherForBattingPosition = (battingPosition: number): string | null => {
+    const pitchingAssignment = pitchingOrder.find(p => p.battingPosition === battingPosition);
+    return pitchingAssignment ? pitchingAssignment.pitcher : null;
+  };
+
+  const getPitcherPriority = (pitcherName: string): number => {
+    const pitcher = players.find(p => p.name === pitcherName);
+    return pitcher?.pitchingPriority || 0;
+  };
+
+  const getPriorityLabel = (priority: number): string => {
+    switch (priority) {
+      case 1: return "Primary";
+      case 2: return "Secondary"; 
+      case 3: return "Tertiary";
+      default: return "Emergency";
+    }
+  };
+
+  const getPriorityColor = (priority: number): string => {
+    switch (priority) {
+      case 1: return "bg-green-100 text-green-800 border-green-200";
+      case 2: return "bg-blue-100 text-blue-800 border-blue-200";
+      case 3: return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      default: return "bg-red-100 text-red-800 border-red-200";
+    }
   };
 
   // Helper function to detect violations of the M-M-F pattern rules
@@ -171,11 +202,22 @@ export default function BattingOrder({
   if (availablePlayers.length === 0) {
     return (
       <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-          Batting Order
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          Batting Order & Pitching
         </h2>
+        <p className="text-gray-600 text-sm mb-4">
+          Batting sequence and pitching assignments for each inning
+        </p>
         <div className="text-center py-8 text-gray-500">
-          <p>Select attending players to generate batting order</p>
+          <p>Select attending players to generate batting order and pitching schedule</p>
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">Team Pitchers</h4>
+            <div className="text-sm text-blue-700">
+              <p><strong>Primary:</strong> Darren</p>
+              <p><strong>Secondary:</strong> Ryan</p>
+              <p><strong>Tertiary:</strong> Kenny</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -185,9 +227,14 @@ export default function BattingOrder({
     <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-white/20 p-6 print:bg-transparent print:shadow-none print:border-none print:rounded-none print:p-0">
       <div className="mb-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Batting Order
-          </h2>
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Batting Order & Pitching
+            </h2>
+            <p className="text-gray-600 text-sm mt-1">
+              Batting sequence and pitching assignments for each inning
+            </p>
+          </div>
           {isGenerated && battingOrder.length > 0 && (
             <button
               onClick={() => setIsEditMode(!isEditMode)}
@@ -241,6 +288,13 @@ export default function BattingOrder({
               const hasMaleViolation = hasConsecutiveMalesViolation(index);
               const hasFemaleViolation = hasConsecutiveFemalesViolation(index);
               const hasAnyViolation = hasMaleViolation || hasFemaleViolation;
+              
+              // Get pitcher information for this batting position
+              const battingPosition = index + 1;
+              const pitcher = getPitcherForBattingPosition(battingPosition);
+              const cleanPitcher = pitcher?.replace(" (Emergency)", "") || "";
+              const priority = cleanPitcher ? getPitcherPriority(cleanPitcher) : 0;
+              const isEmergency = pitcher?.includes("(Emergency)") || false;
 
               return (
                 <div
@@ -252,7 +306,7 @@ export default function BattingOrder({
                   onDragOver={isEditMode ? handleDragOver : undefined}
                   onDrop={isEditMode ? (e) => handleDrop(e, index) : undefined}
                   onDragEnd={isEditMode ? handleDragEnd : undefined}
-                  className={`flex items-center justify-between p-3 backdrop-blur-sm rounded-lg border shadow-md hover:bg-white/70 transition-all duration-200 ${
+                  className={`p-3 backdrop-blur-sm rounded-lg border shadow-md hover:bg-white/70 transition-all duration-200 ${
                     isEditMode ? "cursor-move" : "cursor-default"
                   } ${draggedIndex === index ? "opacity-50 scale-95" : ""} ${
                     hasAnyViolation
@@ -260,46 +314,68 @@ export default function BattingOrder({
                       : "bg-white/60 border-white/30"
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    {isEditMode && (
-                      <svg
-                        className="w-4 h-4 text-gray-400 cursor-move"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
+                  {/* Batter Information */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      {isEditMode && (
+                        <svg
+                          className="w-4 h-4 text-gray-400 cursor-move"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      )}
+                      <div
+                        className={`flex items-center justify-center w-6 h-6 backdrop-blur-sm text-white rounded-full font-bold text-xs shadow-lg ${
+                          hasAnyViolation ? "bg-red-500" : "bg-[#D22237]/90"
+                        }`}
                       >
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    )}
-                    <div
-                      className={`flex items-center justify-center w-6 h-6 backdrop-blur-sm text-white rounded-full font-bold text-xs shadow-lg ${
-                        hasAnyViolation ? "bg-red-500" : "bg-[#D22237]/90"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-900">
-                        {playerName}
-                      </span>
-                      <span className="ml-2 text-xs text-gray-500">
-                        ({getPlayerGender(playerName)})
-                      </span>
-                      {hasMaleViolation && (
-                        <span className="ml-2 text-xs text-red-600 font-medium">
-                          ⚠️ 3+ Males
+                        {index + 1}
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {playerName}
                         </span>
-                      )}
-                      {hasFemaleViolation && (
-                        <span className="ml-2 text-xs text-red-600 font-medium">
-                          ⚠️ Back-to-back F
+                        <span className="ml-2 text-xs text-gray-500">
+                          ({getPlayerGender(playerName)})
                         </span>
-                      )}
+                        {hasMaleViolation && (
+                          <span className="ml-2 text-xs text-red-600 font-medium">
+                            ⚠️ 3+ Males
+                          </span>
+                        )}
+                        {hasFemaleViolation && (
+                          <span className="ml-2 text-xs text-red-600 font-medium">
+                            ⚠️ Back-to-back F
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  
+                  {/* Pitcher Information */}
+                  {pitcher && (
+                    <div className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1">
+                      <span className="text-gray-600">Pitcher:</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`font-medium ${isEmergency ? 'text-red-600' : 'text-gray-900'}`}>
+                          {cleanPitcher}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          isEmergency ? 'bg-red-100 text-red-800 border-red-200' : getPriorityColor(priority)
+                        }`}>
+                          {isEmergency ? 'Emergency' : getPriorityLabel(priority)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
+
+          {/* Mobile View - Enhanced with Pitching Info */}
 
           {/* Desktop View - Table */}
           <div className="hidden md:block print:block overflow-x-auto rounded-lg border border-gray-200">
@@ -388,6 +464,47 @@ export default function BattingOrder({
                             </span>
                           )}
                         </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+                {/* Pitching Row */}
+                <tr className="bg-[#354d74]/10">
+                  <td
+                    className={`py-2 font-medium text-white bg-[#354d74] text-sm ${
+                      battingOrder.length > 9 ? "px-1" : "px-2"
+                    }`}
+                  >
+                    Pitcher
+                  </td>
+                  {battingOrder.map((_, battingIndex) => {
+                    const battingPosition = battingIndex + 1;
+                    const pitcher = getPitcherForBattingPosition(battingPosition);
+                    const cleanPitcher = pitcher?.replace(" (Emergency)", "") || "";
+                    const priority = cleanPitcher ? getPitcherPriority(cleanPitcher) : 0;
+                    const isEmergency = pitcher?.includes("(Emergency)") || false;
+                    
+                    return (
+                      <td
+                        key={`pitcher-${battingPosition}`}
+                        className={`py-2 text-center text-xs font-medium ${
+                          battingOrder.length > 9 ? "px-0.5" : "px-1"
+                        } text-[#354d74]`}
+                      >
+                        {pitcher ? (
+                          <div className="flex flex-col items-center">
+                            <span className={`font-medium text-xs leading-tight ${isEmergency ? 'text-red-600' : ''}`}>
+                              {cleanPitcher}
+                            </span>
+                            <span className={`text-xs px-1 py-0.5 rounded mt-1 ${
+                              isEmergency ? 'bg-red-100 text-red-800 border-red-200' : getPriorityColor(priority)
+                            }`}>
+                              {isEmergency ? 'Emergency' : getPriorityLabel(priority)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">—</span>
+                        )}
                       </td>
                     );
                   })}
@@ -497,12 +614,12 @@ export default function BattingOrder({
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {availablePlayers.length === 0
               ? "Select attending players"
-              : "Ready to Generate Batting Order"}
+              : "Ready to Generate Batting Order & Pitching"}
           </h3>
           <p className="text-gray-600">
             {availablePlayers.length === 0
-              ? "Choose which players are attending to generate a batting order"
-              : `Generate game setup for ${availablePlayers.length} players`}
+              ? "Choose which players are attending to generate batting order and pitching schedule"
+              : `Generate batting order and pitching assignments for ${availablePlayers.length} players`}
           </p>
         </div>
       )}

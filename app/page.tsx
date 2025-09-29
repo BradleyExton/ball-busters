@@ -6,6 +6,7 @@ import Image from "next/image";
 import PositionsTable from "./PositionsTable";
 import BattingOrder from "./Batting";
 import { players } from "./data/players";
+import { generateEnhancedBattingOrder, type Player } from "./utils/positionUtils";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -18,6 +19,7 @@ function HomeContent() {
 
   const [isGameGenerated, setIsGameGenerated] = useState(false);
   const [battingOrder, setBattingOrder] = useState<string[]>([]);
+  const [pitchingOrder, setPitchingOrder] = useState<{ battingPosition: number; batter: string; pitcher: string }[]>([]);
   const [isAttendanceCollapsed, setIsAttendanceCollapsed] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -94,348 +96,19 @@ function HomeContent() {
   };
 
   const generateGame = () => {
-    // Generate batting order following M-M-F-M-M-F pattern with wraparound safety
+    // Get attending players with proper typing
     const availablePlayers = players.filter((player) =>
       attendingPlayers.includes(player.name)
-    );
+    ) as Player[];
 
     if (availablePlayers.length === 0) return;
 
-    // Shuffle players within gender groups for randomization
-    const males = availablePlayers
-      .filter((p) => p.gender === "MALE")
-      .sort(() => Math.random() - 0.5);
+    // Use our enhanced batting order generation that includes pitching order
+    const { battingOrder: newBattingOrder, pitchingOrder: newPitchingOrder } = 
+      generateEnhancedBattingOrder(availablePlayers);
 
-    const females = availablePlayers
-      .filter((p) => p.gender === "FEMALE")
-      .sort(() => Math.random() - 0.5);
-
-    // Helper function to check wraparound violations
-    const hasWraparoundViolation = (order: string[]): boolean => {
-      if (order.length < 2) return false;
-
-      const first = order[0];
-      const second = order.length > 1 ? order[1] : null;
-      const lastTwo = order.slice(-2);
-
-      const isFirstMale = males.some((m) => m.name === first);
-      const isFirstFemale = !isFirstMale;
-      const isSecondMale = second
-        ? males.some((m) => m.name === second)
-        : false;
-
-      // Check if last players would create violations when cycling
-      if (lastTwo.length === 2) {
-        const isLastMale = males.some((m) => m.name === lastTwo[1]);
-        const isSecondLastMale = males.some((m) => m.name === lastTwo[0]);
-
-        // Check for 3 consecutive males with wraparound
-        if (isSecondLastMale && isLastMale && isFirstMale) return true;
-
-        // Check for back-to-back females with wraparound
-        const isLastFemale = !isLastMale;
-        if (isLastFemale && isFirstFemale) return true;
-      }
-
-      // Check if last one is male and first two are males (3 in a row)
-      if (order.length >= 2) {
-        const isLastMale = males.some(
-          (m) => m.name === order[order.length - 1]
-        );
-        if (isLastMale && isFirstMale && isSecondMale) return true;
-      }
-
-      return false;
-    };
-
-    // Fix wraparound violations by swapping positions
-    const fixWraparoundViolation = (order: string[]): string[] | null => {
-      if (order.length < 2) return order;
-
-      const fixedOrder = [...order];
-      const firstIsFemale = !males.some((m) => m.name === fixedOrder[0]);
-      const lastIsFemale = !males.some(
-        (m) => m.name === fixedOrder[fixedOrder.length - 1]
-      );
-
-      // If we have back-to-back females at wraparound (last and first are both female)
-      if (lastIsFemale && firstIsFemale) {
-        // Try to find a male to swap with either the first or last position
-        for (let i = 1; i < fixedOrder.length - 1; i++) {
-          const isMale = males.some((m) => m.name === fixedOrder[i]);
-
-          if (isMale) {
-            // Try swapping with the last position first
-            const testOrder1 = [...fixedOrder];
-            [testOrder1[i], testOrder1[testOrder1.length - 1]] = [
-              testOrder1[testOrder1.length - 1],
-              testOrder1[i],
-            ];
-
-            if (!hasConstraintViolations(testOrder1)) {
-              return testOrder1;
-            }
-
-            // Try swapping with the first position
-            const testOrder2 = [...fixedOrder];
-            [testOrder2[i], testOrder2[0]] = [testOrder2[0], testOrder2[i]];
-
-            if (!hasConstraintViolations(testOrder2)) {
-              return testOrder2;
-            }
-          }
-        }
-      }
-
-      return null; // Could not fix
-    };
-
-    // Check for any constraint violations (internal + wraparound)
-    const hasConstraintViolations = (order: string[]): boolean => {
-      // Check no 3+ consecutive males
-      for (let i = 0; i < order.length - 2; i++) {
-        const isM1 = males.some((m) => m.name === order[i]);
-        const isM2 = males.some((m) => m.name === order[i + 1]);
-        const isM3 = males.some((m) => m.name === order[i + 2]);
-        if (isM1 && isM2 && isM3) return true;
-      }
-
-      // Check no back-to-back females
-      for (let i = 0; i < order.length - 1; i++) {
-        const isF1 = !males.some((m) => m.name === order[i]);
-        const isF2 = !males.some((m) => m.name === order[i + 1]);
-        if (isF1 && isF2) return true;
-      }
-
-      // Check wraparound violations
-      return hasWraparoundViolation(order);
-    };
-
-    // Generate batting order using M-M-F pattern with better female distribution
-    const generateMMFPattern = (): string[] => {
-      const order: string[] = [];
-      const remainingMales = [...males];
-      const remainingFemales = [...females];
-
-      const totalPlayers = remainingMales.length + remainingFemales.length;
-      const maleCount = remainingMales.length;
-      const femaleCount = remainingFemales.length;
-
-      // If we have more females than the basic M-M-F pattern can accommodate,
-      // we need to distribute them more evenly
-      const basicMMFCycles = Math.floor(maleCount / 2); // Each cycle uses 2 males, 1 female
-      const femalesInBasicPattern = basicMMFCycles;
-      const extraFemales = femaleCount - femalesInBasicPattern;
-
-      // Strategy: Build the order ensuring all players are included
-      while (remainingMales.length > 0 || remainingFemales.length > 0) {
-        let added = false;
-
-        // Calculate current pattern position preference
-        const orderLength = order.length;
-        const malesPlaced = order.filter((name) =>
-          males.some((m) => m.name === name)
-        ).length;
-        const femalesPlaced = order.filter((name) =>
-          females.some((f) => f.name === name)
-        ).length;
-
-        // Determine what we should prefer to add next
-        let preferMale = false;
-
-        // Check if we're in a position where M-M-F pattern suggests male
-        const positionInCycle = orderLength % 3;
-        if (positionInCycle === 0 || positionInCycle === 1) {
-          preferMale = true;
-        }
-
-        // Override preference if we have too many of one gender remaining
-        const remainingMaleCount = remainingMales.length;
-        const remainingFemaleCount = remainingFemales.length;
-        const remainingTotal = remainingMaleCount + remainingFemaleCount;
-
-        // If we have way more females remaining, prefer female
-        if (remainingFemaleCount > remainingMaleCount * 1.5) {
-          preferMale = false;
-        }
-        // If we have way more males remaining, prefer male
-        else if (remainingMaleCount > remainingFemaleCount * 2) {
-          preferMale = true;
-        }
-
-        if (preferMale && remainingMales.length > 0) {
-          // Try to add male
-          const canAddMale =
-            order.length < 2 ||
-            !(
-              males.some((m) => m.name === order[order.length - 1]) &&
-              males.some((m) => m.name === order[order.length - 2])
-            );
-
-          if (canAddMale) {
-            order.push(remainingMales.shift()!.name);
-            added = true;
-          }
-        }
-
-        if (!added && remainingFemales.length > 0) {
-          // Try to add female
-          const lastIsFemale =
-            order.length > 0 &&
-            !males.some((m) => m.name === order[order.length - 1]);
-
-          if (!lastIsFemale) {
-            order.push(remainingFemales.shift()!.name);
-            added = true;
-          }
-        }
-
-        // If we couldn't add preferred gender, try the other
-        if (!added && remainingMales.length > 0) {
-          const canAddMale =
-            order.length < 2 ||
-            !(
-              males.some((m) => m.name === order[order.length - 1]) &&
-              males.some((m) => m.name === order[order.length - 2])
-            );
-
-          if (canAddMale) {
-            order.push(remainingMales.shift()!.name);
-            added = true;
-          }
-        }
-
-        if (!added && remainingFemales.length > 0) {
-          // Last resort: add female even if it might break pattern
-          // But still respect the no back-to-back female rule
-          const lastIsFemale =
-            order.length > 0 &&
-            !males.some((m) => m.name === order[order.length - 1]);
-
-          if (!lastIsFemale) {
-            order.push(remainingFemales.shift()!.name);
-            added = true;
-          }
-        }
-
-        // Safety: if we can't add anyone, we need to backtrack
-        if (!added) {
-          console.warn("Cannot place remaining players due to constraints:", {
-            remainingMales: remainingMales.length,
-            remainingFemales: remainingFemales.length,
-            currentOrder: order,
-          });
-
-          // If we have remaining players and we're stuck, try to backtrack
-          // and rearrange to fit everyone
-          if (remainingMales.length > 0 || remainingFemales.length > 0) {
-            // Try to insert remaining players earlier in the order
-            const allRemaining = [...remainingMales, ...remainingFemales];
-
-            for (const player of allRemaining) {
-              const isMale = males.some((m) => m.name === player.name);
-
-              // Try to find a valid position to insert this player
-              let inserted = false;
-              for (let i = 0; i <= order.length && !inserted; i++) {
-                const testOrder = [...order];
-                testOrder.splice(i, 0, player.name);
-
-                // Check if this insertion violates constraints
-                let valid = true;
-
-                // Check no 3+ consecutive males
-                for (let j = 0; j < testOrder.length - 2; j++) {
-                  const isM1 = males.some((m) => m.name === testOrder[j]);
-                  const isM2 = males.some((m) => m.name === testOrder[j + 1]);
-                  const isM3 = males.some((m) => m.name === testOrder[j + 2]);
-                  if (isM1 && isM2 && isM3) {
-                    valid = false;
-                    break;
-                  }
-                }
-
-                // Check no back-to-back females
-                if (valid) {
-                  for (let j = 0; j < testOrder.length - 1; j++) {
-                    const isF1 = !males.some((m) => m.name === testOrder[j]);
-                    const isF2 = !males.some(
-                      (m) => m.name === testOrder[j + 1]
-                    );
-                    if (isF1 && isF2) {
-                      valid = false;
-                      break;
-                    }
-                  }
-                }
-
-                if (valid) {
-                  // Replace order contents instead of reassigning
-                  order.length = 0;
-                  order.push(...testOrder);
-
-                  // Remove this player from remaining arrays
-                  if (isMale) {
-                    const index = remainingMales.findIndex(
-                      (p) => p.name === player.name
-                    );
-                    if (index >= 0) remainingMales.splice(index, 1);
-                  } else {
-                    const index = remainingFemales.findIndex(
-                      (p) => p.name === player.name
-                    );
-                    if (index >= 0) remainingFemales.splice(index, 1);
-                  }
-                  inserted = true;
-                  added = true;
-                }
-              }
-
-              if (inserted) break; // Successfully inserted one, continue main loop
-            }
-          }
-
-          // If still can't place anyone after backtracking, break
-          if (!added) {
-            break;
-          }
-        }
-      }
-
-      return order;
-    };
-
-    // Generate order with multiple attempts to avoid wraparound violations
-    let bestOrder: string[] = [];
-    let attempts = 0;
-    const maxAttempts = 100;
-
-    while (attempts < maxAttempts) {
-      const candidateOrder = generateMMFPattern();
-
-      if (!hasWraparoundViolation(candidateOrder)) {
-        bestOrder = candidateOrder;
-        break; // Found a valid order
-      }
-
-      // If we have a wraparound violation, try to fix it
-      if (candidateOrder.length === males.length + females.length) {
-        const fixedOrder = fixWraparoundViolation(candidateOrder);
-        if (fixedOrder && !hasWraparoundViolation(fixedOrder)) {
-          bestOrder = fixedOrder;
-          break;
-        }
-      }
-
-      // Keep the longest valid sequence
-      if (candidateOrder.length > bestOrder.length) {
-        bestOrder = candidateOrder;
-      }
-
-      attempts++;
-    }
-
-    setBattingOrder(bestOrder);
+    setBattingOrder(newBattingOrder);
+    setPitchingOrder(newPitchingOrder);
     setIsGameGenerated(true);
     setIsAttendanceCollapsed(true);
   };
@@ -443,6 +116,7 @@ function HomeContent() {
   const resetGame = () => {
     setIsGameGenerated(false);
     setBattingOrder([]);
+    setPitchingOrder([]);
     setIsAttendanceCollapsed(false);
     // Clear URL parameters
     router.push(window.location.pathname);
@@ -697,6 +371,7 @@ function HomeContent() {
         <BattingOrder
           attendingPlayers={attendingPlayers}
           battingOrder={battingOrder}
+          pitchingOrder={pitchingOrder}
           isGenerated={isGameGenerated}
           onBattingOrderChange={setBattingOrder}
         />

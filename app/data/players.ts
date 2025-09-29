@@ -23,25 +23,23 @@ export const players = [
   {
     // Female Players
     name: "joleeza",
-    preferredPosition: "none",
+    preferredPosition: POSITIONS.CATCHER,
     playablePositions: [
-      POSITIONS.CATCHER,
-      POSITIONS.FIRST_BASE,
-      POSITIONS.SECOND_BASE,
-      POSITIONS.THIRD_BASE,
       POSITIONS.RIGHT_FIELD,
     ],
     gender: GENDER.FEMALE,
     hittingDistance: 1,
     runningSpeed: 2,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Rosi",
     preferredPosition: POSITIONS.FIRST_BASE,
-    playablePositions: [POSITIONS.CATCHER, POSITIONS.THIRD_BASE],
+    playablePositions: [POSITIONS.THIRD_BASE, POSITIONS.CATCHER],
     gender: GENDER.FEMALE,
     hittingDistance: 1,
     runningSpeed: 1,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Samantha",
@@ -50,14 +48,16 @@ export const players = [
     gender: GENDER.FEMALE,
     hittingDistance: 2,
     runningSpeed: 2,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Madelaine",
     preferredPosition: POSITIONS.RIGHT_FIELD,
-    playablePositions: [POSITIONS.FIRST_BASE, POSITIONS.THIRD_BASE],
+    playablePositions: [POSITIONS.LEFT_FIELD, POSITIONS.CATCHER],
     gender: GENDER.FEMALE,
     hittingDistance: 1,
     runningSpeed: 2,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Tay",
@@ -66,63 +66,71 @@ export const players = [
     gender: GENDER.FEMALE,
     hittingDistance: 2,
     runningSpeed: 2,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Bree",
-    preferredPosition: POSITIONS.SECOND_BASE,
+    preferredPosition: "none",
     playablePositions: [
-      POSITIONS.FIRST_BASE,
-      POSITIONS.CATCHER,
+      POSITIONS.SECOND_BASE,
       POSITIONS.THIRD_BASE,
-      POSITIONS.RIGHT_FIELD,
+      POSITIONS.FIRST_BASE,
+      POSITIONS.SHORTSTOP
     ],
     gender: GENDER.FEMALE,
     hittingDistance: 2,
     runningSpeed: 3,
+    pitchingPriority: 0, // Not a pitcher
   },
   // Male Players
   {
     name: "Dan",
     preferredPosition: POSITIONS.ROVER,
-    playablePositions: [POSITIONS.LEFT_FIELD, POSITIONS.RIGHT_FIELD],
+    playablePositions: [POSITIONS.CENTER_FIELD],
     gender: GENDER.MALE,
     hittingDistance: 5,
     runningSpeed: 5,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Dylan",
     preferredPosition: POSITIONS.THIRD_BASE,
-    playablePositions: [POSITIONS.RIGHT_FIELD, POSITIONS.FIRST_BASE],
+    playablePositions: [POSITIONS.FIRST_BASE],
     gender: GENDER.MALE,
     hittingDistance: 3,
     runningSpeed: 2,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Bradley",
-    preferredPosition: POSITIONS.ROVER,
+    preferredPosition: "none",
     playablePositions: [
-      POSITIONS.LEFT_FIELD,
+      POSITIONS.THIRD_BASE,
+      POSITIONS.FIRST_BASE,
+      POSITIONS.SECOND_BASE,
       POSITIONS.SHORTSTOP,
       POSITIONS.CENTER_FIELD,
+      POSITIONS.LEFT_FIELD,
+      POSITIONS.ROVER
     ],
     gender: GENDER.MALE,
     hittingDistance: 4,
     runningSpeed: 4,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Steve B",
     preferredPosition: "none",
     playablePositions: [
       POSITIONS.LEFT_FIELD,
-      POSITIONS.SHORTSTOP,
       POSITIONS.CENTER_FIELD,
-      POSITIONS.ROVER,
       POSITIONS.RIGHT_FIELD,
       POSITIONS.CATCHER,
     ],
     gender: GENDER.MALE,
     hittingDistance: 3,
     runningSpeed: 5,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Darren",
@@ -131,6 +139,7 @@ export const players = [
     gender: GENDER.MALE,
     hittingDistance: 4,
     runningSpeed: 4,
+    pitchingPriority: 1, // Primary pitcher
   },
   {
     name: "Matt",
@@ -145,25 +154,32 @@ export const players = [
     gender: GENDER.MALE,
     hittingDistance: 3,
     runningSpeed: 3,
+    pitchingPriority: 0, // Not a pitcher
   },
   {
     name: "Kenny",
     preferredPosition: POSITIONS.SHORTSTOP,
-    playablePositions: [POSITIONS.LEFT_FIELD, POSITIONS.THIRD_BASE],
+    playablePositions: [POSITIONS.THIRD_BASE],
     gender: GENDER.MALE,
     hittingDistance: 4,
     runningSpeed: 3,
+    pitchingPriority: 3, // Third priority pitcher (backup for Ryan)
   },
   {
     name: "Ryan",
-    preferredPosition: POSITIONS.LEFT_FIELD,
+    preferredPosition: "none",
     playablePositions: [
+      POSITIONS.LEFT_FIELD,
       POSITIONS.ROVER,
       POSITIONS.SHORTSTOP,
+      POSITIONS.THIRD_BASE,
       POSITIONS.CENTER_FIELD,
+      POSITIONS.FIRST_BASE,
+      POSITIONS.SECOND_BASE
     ],
     gender: GENDER.MALE,
     hittingDistance: 4,
     runningSpeed: 4,
+    pitchingPriority: 2, // Second priority pitcher (backup for Darren)
   },
 ];
